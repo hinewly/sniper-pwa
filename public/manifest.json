@@ -1,7 +1,7 @@
 {
-  "name": "火柴人狙击 · DaoBox",
+  "name": "屋顶狙击 · DaoBox",
   "short_name": "狙击",
-  "description": "开镜屏息，等敌人探头的一瞬间开枪！卡通光枪射击，免费畅玩。",
+  "description": "趴在屋顶架起狙击枪，等猴子探头、兔子蹦过、小鸟低飞，一枪正中！免费畅玩。",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#141b2b",

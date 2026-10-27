@@ -7,8 +7,8 @@
   </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>火柴人狙击 · DaoBox 休闲射击</title>
-  <meta name="description" content="DaoBox 火柴人狙击：开镜屏息，等敌人探头的一瞬间开枪！卡通画风，免费畅玩，进度自动保存。">
+  <title>屋顶狙击 · DaoBox 休闲射击</title>
+  <meta name="description" content="DaoBox 屋顶狙击：趴在屋顶架起狙击枪，等猴子探头、兔子蹦过、小鸟低飞，一枪正中！卡通画风，免费畅玩。">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -18,7 +18,7 @@
 <body>
   <header class="topbar">
     <div class="topbar-inner">
-      <div class="brand">🎯 火柴人狙击</div>
+      <div class="brand">🎯 屋顶狙击</div>
       <div class="topbar-tools">
         <span class="version-badge" id="app-version">v0.1.0</span>
         <button class="refresh-btn" id="refresh-btn" type="button" title="强制刷新">↻</button>
@@ -47,7 +47,8 @@
           <p class="menu-sub" id="menu-best"></p>
           <ul class="rules">
             <li>移动鼠标 / 手指拖动移动瞄准镜，<b>点在镜圈内才开枪</b>，点圈外只是移动镜位</li>
-            <li>敌人从窗户探头或在街上跑过，趁机击倒</li>
+            <li>你就趴在画面顶端的屋顶上架着狙击枪，俯视整个街区</li>
+            <li>🦁 目标动物：猴子从窗户探头、兔子横穿马路、小鸟低空飞过（都有红色标记）</li>
             <li><b>爆头 250 分</b>、击中身体 100 分，连续命中加成最高 x5</li>
             <li>弹匣 5 发打完自动装填（1.8 秒），按 R 或按钮提前装弹</li>
             <li>限时内完成击杀数进入下一关；难度靠敌人跑得越来越快、探头越来越短，<b>顶部 ⏸ 随时暂停</b></li>
@@ -103,11 +104,11 @@
     <section class="tips">
       <h2>玩法说明</h2>
       <ul>
-        <li>经典光枪狙击玩法：瞄准镜外全黑，只有镜内可见，敌人随时探头。</li>
-        <li>准星有呼吸晃动，越往后关卡晃得越厉害，考验屏息时机。</li>
+        <li>经典光枪狙击玩法：瞄准镜外全黑，只有镜内可见，目标随时出现。</li>
+        <li>准星有轻微呼吸晃动，越往后晃得越厉害，考验屏息时机。</li>
         <li>击中身体 100 分、爆头 250 分，连续命中分数最高 x5，脱靶重置连击。</li>
         <li>关卡目标：限时内击倒规定数量目标；每关时间、敌人手速、准星晃动递增。</li>
-        <li>本游戏为卡通竞技风格，无血腥内容；完全免费，不含任何充值、金币或抽奖。</li>
+        <li>卡通竞技打靶风格（目标全是小动物），无血腥内容；完全免费，不含任何充值、金币或抽奖。</li>
       </ul>
     </section>
   </main>
@@ -128,7 +129,7 @@
         '<a href="mailto:' + u + '@' + d + '">' + u + '@' + d + '</a>';
     })();
   </script>
-  <script src="game.js?v=2"></script>
+  <script src="game.js?v=3"></script>
   <script>document.write('<script src="' + window.DB_HOME + '/portal.js" data-app="sniper"><\/script>');</script>
   <script>
     (function () {

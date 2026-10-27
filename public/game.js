@@ -1,18 +1,18 @@
 /* 火柴人狙击 v0.1.0 —— 方案 B（关卡结构预留方案 C 任务制） */
 (function () {
   "use strict";
-  var APP_VERSION = "v0.1.1";
+  var APP_VERSION = "v0.2.0";
   var SAVE_KEY = "dbsniper-save-v1";
   var $ = function (id) { return document.getElementById(id); };
   var W = 900, H = 560; // 逻辑分辨率
 
   /* ---------- 关卡表（预留任务字段 mission，方案 C 用） ---------- */
   var BASE_LEVELS = [
-    { quota: 5,  time: 60, spawnGap: 2000, showTime: 2600, runners: 0, sway: 0.4, mission: null },
-    { quota: 7,  time: 55, spawnGap: 1700, showTime: 2300, runners: 1, sway: 0.55, mission: null },
-    { quota: 9,  time: 55, spawnGap: 1500, showTime: 2000, runners: 2, sway: 0.7, mission: null },
-    { quota: 11, time: 50, spawnGap: 1300, showTime: 1800, runners: 3, sway: 0.85, mission: null },
-    { quota: 13, time: 50, spawnGap: 1100, showTime: 1600, runners: 3, sway: 1.0, mission: null }
+    { quota: 5,  time: 60, spawnGap: 2000, showTime: 2600, runners: 0, flyers: 0, sway: 0.4, mission: null },
+    { quota: 7,  time: 55, spawnGap: 1700, showTime: 2300, runners: 1, flyers: 1, sway: 0.55, mission: null },
+    { quota: 9,  time: 55, spawnGap: 1500, showTime: 2000, runners: 2, flyers: 1, sway: 0.7, mission: null },
+    { quota: 11, time: 50, spawnGap: 1300, showTime: 1800, runners: 2, flyers: 2, sway: 0.85, mission: null },
+    { quota: 13, time: 50, spawnGap: 1100, showTime: 1600, runners: 3, flyers: 2, sway: 1.0, mission: null }
   ];
   function levelOf(n) {
     if (n <= BASE_LEVELS.length) return BASE_LEVELS[n - 1];
@@ -24,6 +24,7 @@
       spawnGap: Math.max(700, b.spawnGap * Math.pow(0.92, k)),
       showTime: Math.max(900, b.showTime * Math.pow(0.92, k)),
       runners: Math.min(4, b.runners + k),
+      flyers: Math.min(3, b.flyers + k),
       sway: Math.min(1.6, b.sway + 0.15 * k),
       mission: null
     };
@@ -92,7 +93,7 @@
   var paused = false;
   var level = 1, cfg = null;
   var score = 0, combo = 0, kills = 0, timeLeft = 0, mag = MAG, reloading = 0;
-  var enemies = [], spawnTimer = 0, runnersAlive = 0;
+  var enemies = [], spawnTimer = 0, runnersAlive = 0, flyersAlive = 0;
   var holes = []; // 脱靶弹孔
   var aim = { x: W / 2, y: H / 2 }; // 指针位置（逻辑坐标）
   var lastT = 0, shake = 0;
@@ -102,16 +103,26 @@
     level = n; cfg = levelOf(n);
     score = level === 1 ? 0 : score; // 关卡间累计
     combo = 0; kills = 0; timeLeft = cfg.time; mag = MAG; reloading = 0;
-    enemies = []; holes = []; spawnTimer = 400; runnersAlive = 0;
+    enemies = []; holes = []; spawnTimer = 400; runnersAlive = 0; flyersAlive = 0;
     buildCity();
     state = "playing";
     hideModals();
-    log("第 " + n + " 关：消灭 " + cfg.quota + " 个目标，限时 " + cfg.time + " 秒");
+    log("第 " + n + " 关：消灭 " + cfg.quota + " 只目标，限时 " + cfg.time + " 秒");
   }
 
   function spawnEnemy() {
+    var wantFlyer = flyersAlive < cfg.flyers && Math.random() < 0.3;
     var wantRunner = runnersAlive < cfg.runners && Math.random() < 0.35;
-    if (wantRunner) {
+    if (wantFlyer) {
+      var fdir = Math.random() < 0.5 ? 1 : -1;
+      enemies.push({
+        type: "flyer", dir: fdir,
+        x: fdir === 1 ? -30 : W + 30, y: 130 + Math.random() * 130,
+        speed: (70 + Math.random() * 50) * cfg.sway + level * 4,
+        state: "walk", anim: Math.random() * 7
+      });
+      flyersAlive++;
+    } else if (wantRunner) {
       var dir = Math.random() < 0.5 ? 1 : -1;
       enemies.push({
         type: "runner", dir: dir,
@@ -163,7 +174,7 @@
       kills++;
       hit.e.state = "dying"; hit.e.anim = 0;
       if (hit.e.type === "runner") runnersAlive--;
-      if (hit.part === "head") { SFX.head(); floatText(p.x, p.y - 30, "爆头 +" + pts, "#ffd66b"); }
+      if (hit.part === "head") { SFX.head(); floatText(p.x, p.y - 30, "正中 +" + pts, "#ffd66b"); }
       else { SFX.body(); floatText(p.x, p.y - 30, "+" + pts, "#9fe8b8"); }
       updateHud();
       if (kills >= cfg.quota) { setTimeout(levelClear, 600); }
@@ -198,8 +209,10 @@
       var top = e.win.y + e.win.h - 66 * hh;
       return { x: e.win.x + 4, y: top, w: e.win.w - 8, h: 66 * hh, hx: e.x, hy: top + 10, hr: 13 };
     }
-    var bob = Math.sin(t * 10) * 2;
-    return { x: e.x - 14, y: e.y - 52 + bob, w: 28, h: 62, hx: e.x, hy: e.y - 44 + bob, hr: 11 };
+    var bob = Math.sin(t * 9) * 5;                                  // 兔子蹦跳
+    var fly = e.type === "flyer" ? Math.sin(t * 6) * 14 : 0;        // 小鸟起伏
+    if (e.type === "flyer") return { x: e.x - 17, y: e.y - 13 + fly, w: 34, h: 26, hx: e.x + e.dir * 13, hy: e.y - 3 + fly, hr: 11 };
+    return { x: e.x - 16, y: e.y - 42 + Math.abs(bob), w: 32, h: 50, hx: e.x, hy: e.y - 34 + Math.abs(bob), hr: 12 };
   }
 
   /* ---------- 特效 ---------- */
@@ -222,9 +235,9 @@
           if (e.phase === "rise" && e.anim > 0.3) { e.phase = "show"; e.anim = 0; }
           else if (e.phase === "show" && e.anim > e.showTime / 1000) { e.phase = "hide"; e.anim = 0; }
           else if (e.phase === "hide" && e.anim > 0.25) { e.state = "gone"; }
-        } else if (e.type === "runner" && e.state === "walk") {
+        } else if ((e.type === "runner" || e.type === "flyer") && e.state === "walk") {
           e.x += e.speed * dt * e.dir;
-          if (e.x < -40 || e.x > W + 40) { e.state = "gone"; runnersAlive--; }
+          if (e.x < -40 || e.x > W + 40) { e.state = "gone"; if (e.type === "runner") runnersAlive--; else flyersAlive--; }
         } else if (e.state === "dying" && e.anim > 0.5) { e.state = "gone"; }
       });
       enemies = enemies.filter(function (e) { return e.state !== "gone"; });
@@ -265,6 +278,19 @@
     ctx.fillStyle = "#3d3d3d"; ctx.fillRect(0, 440, W, 120);
     ctx.fillStyle = "#e8c56b";
     for (var z = 0; z < W; z += 60) ctx.fillRect(z, 498, 34, 6);
+    // 屋顶前沿：玩家狙击位（俯卧 + 步枪 + 瞄准镜）
+    ctx.fillStyle = "#232837"; ctx.fillRect(0, 44, W, 56);
+    ctx.fillStyle = "#2d3446"; ctx.fillRect(0, 96, W, 8);
+    ctx.fillStyle = "#171b26";
+    ctx.beginPath(); ctx.ellipse(470, 88, 56, 15, 0, 0, 7); ctx.fill();     // 身体
+    ctx.beginPath(); ctx.arc(536, 82, 12, 0, 7); ctx.fill();                // 头
+    ctx.fillStyle = "#4d9be6"; ctx.fillRect(522, 68, 28, 6);                // 帽檐蓝条
+    ctx.strokeStyle = "#10141d"; ctx.lineWidth = 7;                        // 枪管
+    ctx.beginPath(); ctx.moveTo(542, 86); ctx.lineTo(650, 132); ctx.stroke();
+    ctx.lineWidth = 11;                                                    // 瞄准镜筒
+    ctx.beginPath(); ctx.moveTo(578, 95); ctx.lineTo(610, 108); ctx.stroke();
+    ctx.fillStyle = "#e33f2f";                                             // 枪口小红点
+    ctx.beginPath(); ctx.arc(652, 134, 3.5, 0, 7); ctx.fill();
     // 弹孔
     holes.forEach(function (h) {
       ctx.globalAlpha = Math.max(0, 1 - h.t / 4);
@@ -290,8 +316,9 @@
         var b = enemyBody(e); if (!b) return;
         var ex = b.x + b.w / 2, ey = b.y - 14;
         if (Math.hypot(ex - rc.x, ey - rc.y) > 150) {
-          ctx.fillStyle = "rgba(255,80,80,.9)";
-          ctx.beginPath(); ctx.moveTo(ex, ey - 10); ctx.lineTo(ex - 7, ey + 1); ctx.lineTo(ex + 7, ey + 1); ctx.closePath(); ctx.fill();
+          ctx.strokeStyle = "rgba(255,80,80,.9)"; ctx.lineWidth = 2.5;
+          ctx.beginPath(); ctx.arc(ex, ey - 8, 6, 0, 7); ctx.stroke();
+          ctx.fillStyle = "rgba(255,80,80,.9)"; ctx.beginPath(); ctx.arc(ex, ey - 8, 2, 0, 7); ctx.fill();
         }
       });
       drawScope();
@@ -302,41 +329,74 @@
   function drawEnemy(e) {
     var body = enemyBody(e);
     if (!body) return; // 探头动画早期还没有可命中区域
+    var dieR = e.state === "dying" ? Math.min(1, e.anim / 0.5) : 0;
     ctx.save();
     if (e.type === "peek") {
       ctx.beginPath(); ctx.rect(e.win.x - 2, e.win.y - 2, e.win.w + 4, e.win.h + 4); ctx.clip();
     }
-    var dieR = e.state === "dying" ? Math.min(1, e.anim / 0.5) : 0;
-    var bob = e.type === "runner" ? Math.sin((e.anim || 0) * 10) * 2 : 0;
+    // 死亡：翻倒 + 淡出
     ctx.translate(body.x + body.w / 2, body.y + body.h);
-    if (dieR > 0) ctx.rotate(dieR * Math.PI / 2 * (e.x % 2 ? 1 : -1));
+    if (dieR > 0) ctx.rotate(dieR * 2.4 * (e.x % 2 ? 1 : -1));
     ctx.translate(-(body.x + body.w / 2), -(body.y + body.h));
-    ctx.globalAlpha = e.state === "dying" ? Math.max(0.15, 1 - dieR) : 1;
-    var bx = body.x, by = body.y + bob, bw = body.w, bh = body.h;
-    // 发光轮廓（暗夜里好找）
-    ctx.shadowColor = "rgba(255,170,120,.85)"; ctx.shadowBlur = 14;
-    // 身体：亮白火柴人
-    ctx.strokeStyle = "#f2ede4"; ctx.lineWidth = 5.5; ctx.lineCap = "round";
-    ctx.beginPath();
-    ctx.moveTo(bx + bw / 2, by + 16); ctx.lineTo(bx + bw / 2, by + bh - 10);          // 躯干
-    if (e.type === "runner" && e.state === "walk") {
-      var sw = Math.sin((e.anim || 0) * 12) * 11;
-      ctx.moveTo(bx + bw / 2, by + bh - 10); ctx.lineTo(bx + bw / 2 - 11 + sw * 0.5, by + bh + 9);  // 腿
-      ctx.moveTo(bx + bw / 2, by + bh - 10); ctx.lineTo(bx + bw / 2 + 11 - sw * 0.5, by + bh + 9);
-      ctx.moveTo(bx + bw / 2, by + 26); ctx.lineTo(bx + bw / 2 - 13 + sw, by + 38);   // 摆臂
-      ctx.moveTo(bx + bw / 2, by + 26); ctx.lineTo(bx + bw / 2 + 13 - sw, by + 38);
-    } else {
-      ctx.moveTo(bx + bw / 2, by + bh - 10); ctx.lineTo(bx + bw / 2 - 11, by + bh + 9);
-      ctx.moveTo(bx + bw / 2, by + bh - 10); ctx.lineTo(bx + bw / 2 + 11, by + bh + 9);
-      ctx.moveTo(bx + bw / 2, by + 26); ctx.lineTo(bx + bw / 2 - 13, by + 38);
-      ctx.moveTo(bx + bw / 2, by + 26); ctx.lineTo(bx + bw / 2 + 13, by + 38);
+    ctx.globalAlpha = e.state === "dying" ? Math.max(0.1, 1 - dieR) : 1;
+    ctx.shadowColor = "rgba(255,190,120,.8)"; ctx.shadowBlur = 12;
+    ctx.lineCap = "round";
+
+    var cx = body.x + body.w / 2;
+
+    if (e.type === "peek") {
+      /* 猴子：棕色 + 浅脸 + 大圆耳 + 卷尾 + 红头巾 */
+      var my = body.y + body.h;
+      ctx.strokeStyle = "#f2ede4"; ctx.lineWidth = 5;
+      ctx.beginPath();                                            // 手臂扒窗沿
+      ctx.moveTo(cx - 10, my - 22); ctx.lineTo(cx - 15, my - 6);
+      ctx.moveTo(cx + 10, my - 22); ctx.lineTo(cx + 15, my - 6);
+      ctx.stroke();
+      ctx.strokeStyle = "#a4663a"; ctx.lineWidth = 6;
+      ctx.beginPath(); ctx.moveTo(cx, my - 20); ctx.lineTo(cx, my - 2); ctx.stroke();  // 身体
+      ctx.strokeStyle = "#a4663a"; ctx.lineWidth = 3.5;
+      ctx.beginPath();                                            // 卷尾巴
+      ctx.arc(cx + 13, my - 8, 7, -Math.PI / 2, Math.PI * 0.9); ctx.stroke();
+      ctx.fillStyle = "#a4663a";                                  // 头
+      ctx.beginPath(); ctx.arc(cx, my - 34, 11, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx - 10, my - 40, 4.5, 0, 7); ctx.arc(cx + 10, my - 40, 4.5, 0, 7); ctx.fill(); // 耳
+      ctx.fillStyle = "#e8c39a";                                  // 脸
+      ctx.beginPath(); ctx.ellipse(cx, my - 31, 6.5, 8, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = "#e33f2f"; ctx.fillRect(cx - 11, my - 42, 22, 5);  // 红头巾
+    } else if (e.type === "runner") {
+      /* 兔子：白色 + 长耳 + 蹦跳 + 红蝴蝶结 */
+      var ry = body.y + body.h;
+      ctx.fillStyle = "#f4f2ec";
+      ctx.beginPath(); ctx.ellipse(cx, ry - 16, 14, 17, 0, 0, 7); ctx.fill();   // 身体
+      ctx.beginPath(); ctx.arc(cx + 6, ry - 36, 9, 0, 7); ctx.fill();           // 头
+      var ear = Math.sin((e.anim || 0) * 9) * 0.15;
+      ctx.beginPath(); ctx.ellipse(cx + 2, ry - 52, 3.5, 12, ear, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(cx + 9, ry - 51, 3.5, 12, -ear, 0, 7); ctx.fill();
+      ctx.fillStyle = "#f2b8c6";                                                // 耳内
+      ctx.beginPath(); ctx.ellipse(cx + 2, ry - 51, 1.6, 8, ear, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(cx + 9, ry - 50, 1.6, 8, -ear, 0, 7); ctx.fill();
+      ctx.fillStyle = "#3a3a3a"; ctx.beginPath(); ctx.arc(cx + 10, ry - 37, 1.6, 0, 7); ctx.fill(); // 眼
+      ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(cx - 12, ry - 14, 4, 0, 7); ctx.fill();      // 尾
+      ctx.fillStyle = "#e33f2f";                                                // 红蝴蝶结
+      ctx.beginPath(); ctx.moveTo(cx + 6, ry - 27); ctx.lineTo(cx - 1, ry - 31); ctx.lineTo(cx - 1, ry - 23); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(cx + 6, ry - 27); ctx.lineTo(cx + 13, ry - 31); ctx.lineTo(cx + 13, ry - 23); ctx.closePath(); ctx.fill();
+      ctx.fillRect(cx + 4, ry - 30, 4, 6);
+    } else if (e.type === "flyer") {
+      /* 小鸟：蓝色 + 拍翅 + 红项圈 */
+      var fy = body.y + body.h / 2;
+      var flap = Math.sin((e.anim || 0) * 16) * 8;
+      ctx.fillStyle = "#4d9be6";
+      ctx.beginPath(); ctx.ellipse(cx, fy, 13, 9, 0, 0, 7); ctx.fill();         // 身体
+      ctx.beginPath(); ctx.arc(cx + e.dir * 11, fy - 5, 6.5, 0, 7); ctx.fill(); // 头
+      ctx.strokeStyle = "#2f6fb2"; ctx.lineWidth = 4;                           // 翅膀
+      ctx.beginPath(); ctx.moveTo(cx - e.dir * 2, fy - 2); ctx.lineTo(cx - e.dir * 10, fy - 8 - flap); ctx.stroke();
+      ctx.fillStyle = "#2f6fb2";                                                // 尾
+      ctx.beginPath(); ctx.moveTo(cx - e.dir * 12, fy); ctx.lineTo(cx - e.dir * 22, fy - 5); ctx.lineTo(cx - e.dir * 21, fy + 4); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = "#f2a33c";                                                // 喙
+      ctx.beginPath(); ctx.moveTo(cx + e.dir * 17, fy - 5); ctx.lineTo(cx + e.dir * 24, fy - 3); ctx.lineTo(cx + e.dir * 17, fy - 1); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = "#3a3a3a"; ctx.beginPath(); ctx.arc(cx + e.dir * 12, fy - 7, 1.5, 0, 7); ctx.fill(); // 眼
+      ctx.fillStyle = "#e33f2f"; ctx.fillRect(cx + e.dir * 6, fy - 3, 4, 8);    // 红项圈
     }
-    ctx.stroke();
-    ctx.shadowBlur = 0;
-    // 头：浅肤色 + 红帽（目标标识）
-    ctx.fillStyle = "#f7d9b8"; ctx.beginPath(); ctx.arc(body.hx, body.hy, 12, 0, 7); ctx.fill();
-    ctx.strokeStyle = "#33261a"; ctx.lineWidth = 1.5; ctx.stroke();
-    ctx.fillStyle = "#e33f2f"; ctx.beginPath(); ctx.arc(body.hx, body.hy, 12, Math.PI, 0); ctx.fill();
     ctx.restore();
   }
 
@@ -375,7 +435,7 @@
     $("hud-mag").className = reloading > 0 ? "warn" : "";
     $("hud-score").textContent = score;
     $("hud-combo").textContent = combo > 1 ? "连击 x" + Math.min(combo, 5) : "";
-    $("hud-level").textContent = "第 " + level + " 关 · 剩余 " + Math.max(0, cfg ? cfg.quota - kills : 0) + " 个";
+    $("hud-level").textContent = "第 " + level + " 关 · 剩余 " + Math.max(0, cfg ? cfg.quota - kills : 0) + " 只";
   }
   function log(msg) { $("hud-level").textContent = msg; }
   function hideModals() { ["menu", "clear-modal", "over-modal"].forEach(function (id) { $(id).classList.add("hidden"); }); }
