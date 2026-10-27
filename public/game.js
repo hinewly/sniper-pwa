@@ -1,7 +1,7 @@
 /* 火柴人狙击 v0.1.0 —— 方案 B（关卡结构预留方案 C 任务制） */
 (function () {
   "use strict";
-  var APP_VERSION = "v0.2.0";
+  var APP_VERSION = "v0.2.1";
   var SAVE_KEY = "dbsniper-save-v1";
   var $ = function (id) { return document.getElementById(id); };
   var W = 900, H = 560; // 逻辑分辨率
@@ -279,18 +279,28 @@
     ctx.fillStyle = "#e8c56b";
     for (var z = 0; z < W; z += 60) ctx.fillRect(z, 498, 34, 6);
     // 屋顶前沿：玩家狙击位（俯卧 + 步枪 + 瞄准镜）
-    ctx.fillStyle = "#232837"; ctx.fillRect(0, 44, W, 56);
+    ctx.fillStyle = "#181d2a"; ctx.fillRect(0, 44, W, 56);
     ctx.fillStyle = "#2d3446"; ctx.fillRect(0, 96, W, 8);
-    ctx.fillStyle = "#171b26";
-    ctx.beginPath(); ctx.ellipse(470, 88, 56, 15, 0, 0, 7); ctx.fill();     // 身体
-    ctx.beginPath(); ctx.arc(536, 82, 12, 0, 7); ctx.fill();                // 头
-    ctx.fillStyle = "#4d9be6"; ctx.fillRect(522, 68, 28, 6);                // 帽檐蓝条
-    ctx.strokeStyle = "#10141d"; ctx.lineWidth = 7;                        // 枪管
-    ctx.beginPath(); ctx.moveTo(542, 86); ctx.lineTo(650, 132); ctx.stroke();
-    ctx.lineWidth = 11;                                                    // 瞄准镜筒
-    ctx.beginPath(); ctx.moveTo(578, 95); ctx.lineTo(610, 108); ctx.stroke();
-    ctx.fillStyle = "#e33f2f";                                             // 枪口小红点
-    ctx.beginPath(); ctx.arc(652, 134, 3.5, 0, 7); ctx.fill();
+    // 狙击手：亮色画，保证一眼可见
+    ctx.save();
+    ctx.shadowColor = "rgba(160,200,255,.55)"; ctx.shadowBlur = 14;
+    ctx.fillStyle = "#5d729e";                                              // 作训服（亮蓝灰）
+    ctx.beginPath(); ctx.ellipse(470, 87, 58, 16, 0, 0, 7); ctx.fill();     // 俯卧身体
+    ctx.strokeStyle = "#c9d6ee"; ctx.lineWidth = 1.5; ctx.stroke();         // 白描边
+    ctx.fillStyle = "#f7d9b8";                                              // 脸（肤色）
+    ctx.beginPath(); ctx.arc(538, 80, 11, 0, 7); ctx.fill();
+    ctx.fillStyle = "#39506e";                                              // 头盔
+    ctx.beginPath(); ctx.arc(538, 78, 11, Math.PI, 0); ctx.fill();
+    ctx.fillRect(524, 74, 28, 5);
+    ctx.fillStyle = "#c9d6ee"; ctx.fillRect(524, 76, 28, 3);                // 盔沿高光
+    ctx.fillStyle = "#e8ecf4";                                              // 步枪（亮金属）
+    ctx.beginPath(); ctx.moveTo(544, 84); ctx.lineTo(640, 122); ctx.lineTo(644, 130); ctx.lineTo(548, 96); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "#39506e";                                              // 瞄准镜筒
+    ctx.fillRect(576, 90, 36, 12);
+    ctx.fillStyle = "#7fd4ff";                                              // 镜片反光
+    ctx.beginPath(); ctx.arc(610, 96, 4, 0, 7); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.restore();
     // 弹孔
     holes.forEach(function (h) {
       ctx.globalAlpha = Math.max(0, 1 - h.t / 4);
