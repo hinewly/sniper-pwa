@@ -1,6 +1,6 @@
 # 火柴人狙击首版搭建 交接
 
-- last_updated: 2026-10-27 11:05
+- last_updated: 2026-10-27 11:20
 - status: active
 - version: v0.1.0
 
@@ -23,7 +23,7 @@
 ## 待办
 
 - [ ] 手机实测：触屏瞄准手感（目前 pointerdown 即开枪，拖动瞄准体验待验证）、加主屏幕、音效
-- [ ] 首页入口：等用户拍板（射击题材，建议观察掼蛋入口反响后再上，或直接上）
+- [x] 首页入口：2026-10-27 用户要求上线（v1.4.9-audit，daobox-home commit 含 app.js+index.html?v=7；踩坑记录：改 app.js 必须同步升 index.html 的 ?v= 版本号）
 - [ ] 二期（方案 C）：任务制关卡（只打红头巾/别打平民/风偏提前量），数据结构已预留 mission 字段
 - [ ] 平衡性调参：依用户试玩反馈调 spawnGap/showTime/sway/分数
 
