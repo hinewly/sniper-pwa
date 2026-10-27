@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <script>
+    window.DB_HOME = location.hostname.indexOf('daobox.net.cn') !== -1
+      ? 'https://daobox.net.cn' : 'https://daobox.app';
+  </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>火柴人狙击 · DaoBox 休闲射击</title>
+  <meta name="description" content="DaoBox 火柴人狙击：开镜屏息，等敌人探头的一瞬间开枪！卡通画风，免费畅玩，进度自动保存。">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="theme-color" content="#1a2233">
+  <link rel="stylesheet" href="style.css?v=1">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">🎯 火柴人狙击</div>
+      <div class="topbar-tools">
+        <span class="version-badge" id="app-version">v0.1.0</span>
+        <button class="refresh-btn" id="refresh-btn" type="button" title="强制刷新">↻</button>
+        <button class="refresh-btn" id="btn-mute" type="button" title="音效开关">🔊</button>
+      </div>
+      <div class="topbar-slot" id="db-account-slot"></div>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="hud">
+      <div class="score-box"><div class="score-label" id="hud-level">准备</div><div class="score-value small" id="hud-time">—</div></div>
+      <div class="score-box"><div class="score-label">弹匣</div><div class="score-value small" id="hud-mag">5/5</div></div>
+      <div class="score-box"><div class="score-label">得分</div><div class="score-value" id="hud-score">0</div></div>
+      <div class="score-box"><div class="score-label" id="hud-combo"></div><button id="btn-reload" class="btn small" type="button">装弹 R</button></div>
+    </section>
+
+    <div class="stage-wrap">
+      <canvas id="game" class="stage"></canvas>
+
+      <!-- 开始菜单 -->
+      <div id="menu" class="overlay">
+        <div class="panel">
+          <h2>🎯 火柴人狙击</h2>
+          <p class="menu-sub" id="menu-best"></p>
+          <ul class="rules">
+            <li>移动鼠标 / 手指拖动瞄准，<b>点击开枪</b></li>
+            <li>敌人从窗户探头或在街上跑过，趁机击倒</li>
+            <li><b>爆头 250 分</b>、击中身体 100 分，连续命中加成最高 x5</li>
+            <li>弹匣 5 发打完自动装填（1.8 秒），按 R 或按钮提前装弹</li>
+            <li>限时内完成击杀数进入下一关，难度逐关提升</li>
+          </ul>
+          <button id="btn-start" class="btn primary big" type="button">开始狙击</button>
+        </div>
+      </div>
+
+      <!-- 过关 -->
+      <div id="clear-modal" class="overlay hidden">
+        <div class="panel">
+          <h2>✅ 关卡完成</h2>
+          <p id="clear-info" class="menu-sub"></p>
+          <button id="btn-next" class="btn primary big" type="button">下一关 →</button>
+        </div>
+      </div>
+
+      <!-- 结束 -->
+      <div id="over-modal" class="overlay hidden">
+        <div class="panel">
+          <h2>⏱ 时间到</h2>
+          <p id="over-info" class="menu-sub"></p>
+          <div class="row">
+            <button id="btn-retry" class="btn primary big" type="button">再来一次</button>
+            <button id="btn-menu" class="btn big" type="button">回主菜单</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 时长锁定 -->
+      <div id="time-lock" class="overlay hidden">
+        <div class="panel">
+          <h3>今日娱乐时长已用完</h3>
+          <p>游客每天 15 分钟、注册用户 30 分钟（邀好友可加时）。</p>
+          <a id="lock-login" class="btn primary" href="#">注册 / 登录</a>
+          <button id="lock-close" class="btn" type="button">知道了</button>
+        </div>
+      </div>
+    </div>
+
+    <section class="tips">
+      <h2>玩法说明</h2>
+      <ul>
+        <li>经典光枪狙击玩法：瞄准镜外全黑，只有镜内可见，敌人随时探头。</li>
+        <li>准星有呼吸晃动，越往后关卡晃得越厉害，考验屏息时机。</li>
+        <li>击中身体 100 分、爆头 250 分，连续命中分数最高 x5，脱靶重置连击。</li>
+        <li>关卡目标：限时内击倒规定数量目标；每关时间、敌人手速、准星晃动递增。</li>
+        <li>本游戏为卡通竞技风格，无血腥内容；完全免费，不含任何充值、金币或抽奖。</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <a id="home-link" href="javascript:void(0)">← 返回 DaoBox 工具箱</a>
+    <span class="dot">·</span>
+    <a id="app-home-link" href="./?src=home">🏠 狙击首页</a>
+    <span class="dot">·</span>
+    <span id="contact-email"></span>
+  </footer>
+  <p class="disclaimer">本游戏为卡通休闲娱乐项目，不含任何真实货币交易、赌博或血腥内容。</p>
+
+  <script>
+    (function () {
+      var u = 'support', d = 'daobox.net.cn';
+      document.getElementById('contact-email').innerHTML =
+        '<a href="mailto:' + u + '@' + d + '">' + u + '@' + d + '</a>';
+    })();
+  </script>
+  <script src="game.js?v=1"></script>
+  <script>document.write('<script src="' + window.DB_HOME + '/portal.js" data-app="sniper"><\/script>');</script>
+  <script>
+    (function () {
+      var login = document.getElementById('lock-login');
+      if (login) login.href = window.DB_HOME + '/login?src=sniper';
+      var home = document.getElementById('home-link');
+      if (home) home.href = window.DB_HOME + '?src=sniper';
+    })();
+  </script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('./service-worker.js').catch(function () {});
+      });
+    }
+  </script>
+</body>
+</html>
