@@ -1,7 +1,7 @@
 /* 火柴人狙击 v0.1.0 —— 方案 B（关卡结构预留方案 C 任务制） */
 (function () {
   "use strict";
-  var APP_VERSION = "v0.2.2";
+  var APP_VERSION = "v0.2.3";
   var SAVE_KEY = "dbsniper-save-v1";
   var $ = function (id) { return document.getElementById(id); };
   var W = 900, H = 560; // 逻辑分辨率
@@ -264,7 +264,7 @@
     sky.addColorStop(0, "#26334d"); sky.addColorStop(1, "#5c6b73");
     ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
     // 月亮
-    ctx.fillStyle = "rgba(240,240,210,.9)"; ctx.beginPath(); ctx.arc(120, 90, 26, 0, 7); ctx.fill();
+    ctx.fillStyle = "rgba(240,240,210,.9)"; ctx.beginPath(); ctx.arc(720, 90, 26, 0, 7); ctx.fill();
     // 楼
     buildings.forEach(function (b) {
       ctx.fillStyle = b.color; ctx.fillRect(b.x, 440 - b.h, b.w, b.h);
@@ -278,10 +278,11 @@
     ctx.fillStyle = "#3d3d3d"; ctx.fillRect(0, 440, W, 120);
     ctx.fillStyle = "#e8c56b";
     for (var z = 0; z < W; z += 60) ctx.fillRect(z, 498, 34, 6);
-    // 屋顶前沿：玩家狙击位（趴姿狙击手 + 长狙击枪，高对比版）
+    // 屋顶左上角：玩家狙击位（趴姿狙击手 + 长狙击枪，高对比版）
     ctx.fillStyle = "#1f2737"; ctx.fillRect(0, 44, W, 60);
     ctx.fillStyle = "#39445d"; ctx.fillRect(0, 100, W, 8);           // 檐口
     ctx.save();
+    ctx.translate(-300, 0); // 狙击手固定在左上角
     ctx.shadowColor = "rgba(160,205,255,.65)"; ctx.shadowBlur = 18;
     // 沙袋（狙击手前方）
     ctx.fillStyle = "#7c7156";

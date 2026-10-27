@@ -2,7 +2,7 @@
 
 - last_updated: 2026-10-27 11:04
 - status: active
-- version: v0.2.2
+- version: v0.2.3
 
 ## 任务目标
 
@@ -11,6 +11,10 @@
 ## 当前状态
 
 ✅ 国内站已上线 https://sniper.daobox.net.cn（HTTPS 200、线上 E2E 全过）。剩手机实测 + 首页入口待用户拍板。
+
+## 最近完成（v0.2.3）
+
+- 按用户反馈把狙击手从屋顶中部移到左上角，月亮右移避让；版本与缓存同步升到 v0.2.3 / game.js?v=6 / SW dbsniper-v6，本地 E2E 通过并已部署线上
 
 ## 最近完成（v0.2.2）
 
