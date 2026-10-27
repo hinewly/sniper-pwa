@@ -1,18 +1,18 @@
 /* 火柴人狙击 v0.1.0 —— 方案 B（关卡结构预留方案 C 任务制） */
 (function () {
   "use strict";
-  var APP_VERSION = "v0.1.0";
+  var APP_VERSION = "v0.1.1";
   var SAVE_KEY = "dbsniper-save-v1";
   var $ = function (id) { return document.getElementById(id); };
   var W = 900, H = 560; // 逻辑分辨率
 
   /* ---------- 关卡表（预留任务字段 mission，方案 C 用） ---------- */
   var BASE_LEVELS = [
-    { quota: 5,  time: 60, spawnGap: 2000, showTime: 2400, runners: 0, sway: 1.0, mission: null },
-    { quota: 7,  time: 55, spawnGap: 1700, showTime: 2100, runners: 1, sway: 1.2, mission: null },
-    { quota: 9,  time: 55, spawnGap: 1500, showTime: 1900, runners: 2, sway: 1.4, mission: null },
-    { quota: 11, time: 50, spawnGap: 1300, showTime: 1700, runners: 2, sway: 1.6, mission: null },
-    { quota: 13, time: 50, spawnGap: 1100, showTime: 1500, runners: 3, sway: 1.8, mission: null }
+    { quota: 5,  time: 60, spawnGap: 2000, showTime: 2600, runners: 0, sway: 0.4, mission: null },
+    { quota: 7,  time: 55, spawnGap: 1700, showTime: 2300, runners: 1, sway: 0.55, mission: null },
+    { quota: 9,  time: 55, spawnGap: 1500, showTime: 2000, runners: 2, sway: 0.7, mission: null },
+    { quota: 11, time: 50, spawnGap: 1300, showTime: 1800, runners: 3, sway: 0.85, mission: null },
+    { quota: 13, time: 50, spawnGap: 1100, showTime: 1600, runners: 3, sway: 1.0, mission: null }
   ];
   function levelOf(n) {
     if (n <= BASE_LEVELS.length) return BASE_LEVELS[n - 1];
@@ -24,7 +24,7 @@
       spawnGap: Math.max(700, b.spawnGap * Math.pow(0.92, k)),
       showTime: Math.max(900, b.showTime * Math.pow(0.92, k)),
       runners: Math.min(4, b.runners + k),
-      sway: Math.min(3, b.sway + 0.2 * k),
+      sway: Math.min(1.6, b.sway + 0.15 * k),
       mission: null
     };
   }
@@ -88,7 +88,8 @@
   }
 
   /* ---------- 游戏状态 ---------- */
-  var state = "menu"; // menu | playing | levelclear | gameover
+  var state = "menu"; // menu | playing | paused | levelclear | gameover
+  var paused = false;
   var level = 1, cfg = null;
   var score = 0, combo = 0, kills = 0, timeLeft = 0, mag = MAG, reloading = 0;
   var enemies = [], spawnTimer = 0, runnersAlive = 0;
@@ -115,7 +116,7 @@
       enemies.push({
         type: "runner", dir: dir,
         x: dir === 1 ? -30 : W + 30, y: 500,
-        speed: (45 + Math.random() * 35) * cfg.sway,
+        speed: (55 + Math.random() * 40) * cfg.sway + level * 6,
         phase: Math.random() * 7, state: "walk", anim: 0
       });
       runnersAlive++;
@@ -139,7 +140,7 @@
   }
 
   function fire() {
-    if (state !== "playing") return;
+    if (state !== "playing" || paused) return;
     if (reloading > 0) return;
     if (mag <= 0) { SFX.empty(); startReload(); return; }
     mag--; shake = 7; SFX.shot();
@@ -175,6 +176,14 @@
     if (mag === 0) startReload();
   }
 
+  function togglePause() {
+    if (state !== "playing") return;
+    paused = !paused;
+    $("btn-pause").textContent = paused ? "▶" : "⏸";
+    if (paused) { $("pause-modal").classList.remove("hidden"); }
+    else { $("pause-modal").classList.add("hidden"); lastT = performance.now(); }
+  }
+
   function startReload() {
     if (reloading > 0 || mag === MAG) return;
     reloading = RELOAD_MS; SFX.reload();
@@ -201,7 +210,7 @@
   function frame(now) {
     requestAnimationFrame(frame);
     var dt = Math.min(0.05, (now - lastT) / 1000 || 0); lastT = now;
-    if (state === "playing") {
+    if (state === "playing" && !paused) {
       timeLeft -= dt;
       if (timeLeft <= 0) { timeLeft = 0; gameOver(); }
       if (reloading > 0) { reloading -= dt * 1000; if (reloading <= 0) { reloading = 0; mag = MAG; updateHud(); } }
@@ -265,6 +274,7 @@
     });
     // 敌人
     enemies.forEach(function (e) { drawEnemy(e); });
+    // 瞄准镜外的敌人：头顶红色小箭头提示方位（难度靠跑动，不靠藏）
     // 飘字
     floats.forEach(function (f) {
       ctx.globalAlpha = Math.max(0, 1 - f.t / 1.1);
@@ -272,7 +282,20 @@
       ctx.fillText(f.txt, f.x, f.y); ctx.textAlign = "left"; ctx.globalAlpha = 1;
     });
 
-    if (state === "playing") drawScope();
+    if (state === "playing" && !paused) {
+      var rc = reticle();
+      enemies.forEach(function (e) {
+        if (e.state === "dying" || e.state === "gone") return;
+        if (e.type === "peek" && e.phase === "hide") return;
+        var b = enemyBody(e); if (!b) return;
+        var ex = b.x + b.w / 2, ey = b.y - 14;
+        if (Math.hypot(ex - rc.x, ey - rc.y) > 150) {
+          ctx.fillStyle = "rgba(255,80,80,.9)";
+          ctx.beginPath(); ctx.moveTo(ex, ey - 10); ctx.lineTo(ex - 7, ey + 1); ctx.lineTo(ex + 7, ey + 1); ctx.closePath(); ctx.fill();
+        }
+      });
+      drawScope();
+    }
     ctx.restore();
   }
 
@@ -290,26 +313,30 @@
     ctx.translate(-(body.x + body.w / 2), -(body.y + body.h));
     ctx.globalAlpha = e.state === "dying" ? Math.max(0.15, 1 - dieR) : 1;
     var bx = body.x, by = body.y + bob, bw = body.w, bh = body.h;
-    // 身体
-    ctx.strokeStyle = "#141414"; ctx.lineWidth = 5; ctx.lineCap = "round";
+    // 发光轮廓（暗夜里好找）
+    ctx.shadowColor = "rgba(255,170,120,.85)"; ctx.shadowBlur = 14;
+    // 身体：亮白火柴人
+    ctx.strokeStyle = "#f2ede4"; ctx.lineWidth = 5.5; ctx.lineCap = "round";
     ctx.beginPath();
-    ctx.moveTo(bx + bw / 2, by + 18); ctx.lineTo(bx + bw / 2, by + bh - 8);          // 躯干
+    ctx.moveTo(bx + bw / 2, by + 16); ctx.lineTo(bx + bw / 2, by + bh - 10);          // 躯干
     if (e.type === "runner" && e.state === "walk") {
-      var sw = Math.sin((e.anim || 0) * 12) * 10;
-      ctx.moveTo(bx + bw / 2, by + bh - 8); ctx.lineTo(bx + bw / 2 - 10 + sw * 0.4, by + bh + 8);
-      ctx.moveTo(bx + bw / 2, by + bh - 8); ctx.lineTo(bx + bw / 2 + 10 - sw * 0.4, by + bh + 8);
-      ctx.moveTo(bx + bw / 2, by + 28); ctx.lineTo(bx + bw / 2 - 12 + sw, by + 40);
-      ctx.moveTo(bx + bw / 2, by + 28); ctx.lineTo(bx + bw / 2 + 12 - sw, by + 40);
+      var sw = Math.sin((e.anim || 0) * 12) * 11;
+      ctx.moveTo(bx + bw / 2, by + bh - 10); ctx.lineTo(bx + bw / 2 - 11 + sw * 0.5, by + bh + 9);  // 腿
+      ctx.moveTo(bx + bw / 2, by + bh - 10); ctx.lineTo(bx + bw / 2 + 11 - sw * 0.5, by + bh + 9);
+      ctx.moveTo(bx + bw / 2, by + 26); ctx.lineTo(bx + bw / 2 - 13 + sw, by + 38);   // 摆臂
+      ctx.moveTo(bx + bw / 2, by + 26); ctx.lineTo(bx + bw / 2 + 13 - sw, by + 38);
     } else {
-      ctx.moveTo(bx + bw / 2, by + bh - 8); ctx.lineTo(bx + bw / 2 - 10, by + bh + 8);
-      ctx.moveTo(bx + bw / 2, by + bh - 8); ctx.lineTo(bx + bw / 2 + 10, by + bh + 8);
-      ctx.moveTo(bx + bw / 2, by + 28); ctx.lineTo(bx + bw / 2 - 12, by + 40);
-      ctx.moveTo(bx + bw / 2, by + 28); ctx.lineTo(bx + bw / 2 + 12, by + 40);
+      ctx.moveTo(bx + bw / 2, by + bh - 10); ctx.lineTo(bx + bw / 2 - 11, by + bh + 9);
+      ctx.moveTo(bx + bw / 2, by + bh - 10); ctx.lineTo(bx + bw / 2 + 11, by + bh + 9);
+      ctx.moveTo(bx + bw / 2, by + 26); ctx.lineTo(bx + bw / 2 - 13, by + 38);
+      ctx.moveTo(bx + bw / 2, by + 26); ctx.lineTo(bx + bw / 2 + 13, by + 38);
     }
     ctx.stroke();
-    // 头（红帽敌人）
-    ctx.fillStyle = "#141414"; ctx.beginPath(); ctx.arc(body.hx, body.hy, 11, 0, 7); ctx.fill();
-    ctx.fillStyle = "#c0392b"; ctx.beginPath(); ctx.arc(body.hx, body.hy, 11, Math.PI, 0); ctx.fill();
+    ctx.shadowBlur = 0;
+    // 头：浅肤色 + 红帽（目标标识）
+    ctx.fillStyle = "#f7d9b8"; ctx.beginPath(); ctx.arc(body.hx, body.hy, 12, 0, 7); ctx.fill();
+    ctx.strokeStyle = "#33261a"; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.fillStyle = "#e33f2f"; ctx.beginPath(); ctx.arc(body.hx, body.hy, 12, Math.PI, 0); ctx.fill();
     ctx.restore();
   }
 
@@ -387,9 +414,14 @@
     });
     canvas.addEventListener("pointerdown", function (ev) {
       ev.preventDefault();
-      var p = toLogical(ev); aim.x = p.x; aim.y = p.y;
+      var p = toLogical(ev);
       if (ac() && ac().state === "suspended") ac().resume();
-      fire();
+      if (state !== "playing") return;
+      // 点在瞄准镜圈内才开枪；点圈外 = 把镜子移过去
+      var c = reticle();
+      var dist = Math.hypot(p.x - c.x, p.y - c.y);
+      if (dist <= 150 * 0.96) { fire(); }
+      else { aim.x = p.x; aim.y = p.y; }
     });
     window.addEventListener("keydown", function (ev) {
       if (ev.key === "r" || ev.key === "R") startReload();
@@ -416,6 +448,9 @@
     $("btn-retry").addEventListener("click", function () { score = 0; startLevel(1); });
     $("btn-menu").addEventListener("click", showMenu);
     $("btn-reload").addEventListener("click", startReload);
+    $("btn-pause").addEventListener("click", togglePause);
+    $("btn-resume").addEventListener("click", togglePause);
+    $("btn-quit").addEventListener("click", function () { paused = false; $("btn-pause").textContent = "⏸"; $("pause-modal").classList.add("hidden"); showMenu(); });
     $("btn-mute").addEventListener("click", function () { save.muted = !save.muted; persist(); $("btn-mute").textContent = save.muted ? "🔇" : "🔊"; });
     if (save.muted) $("btn-mute").textContent = "🔇";
     $("lock-close").addEventListener("click", function () { $("time-lock").classList.add("hidden"); showMenu(); });
@@ -428,6 +463,8 @@
   // E2E 测试钩子（不影响正常玩法）
   window.__sniperTest = {
     state: function () { return state; },
+    paused: function () { return paused; },
+    togglePause: togglePause,
     enemies: function () { return enemies; },
     aim: aim,
     fire: fire,

@@ -33,7 +33,8 @@
       <div class="score-box"><div class="score-label" id="hud-level">准备</div><div class="score-value small" id="hud-time">—</div></div>
       <div class="score-box"><div class="score-label">弹匣</div><div class="score-value small" id="hud-mag">5/5</div></div>
       <div class="score-box"><div class="score-label">得分</div><div class="score-value" id="hud-score">0</div></div>
-      <div class="score-box"><div class="score-label" id="hud-combo"></div><button id="btn-reload" class="btn small" type="button">装弹 R</button></div>
+      <div class="score-box"><div class="score-label" id="hud-combo"></div><button id="btn-reload" class="btn small" type="button">装弹 R</button>
+          <button id="btn-pause" class="btn small" type="button" title="暂停">⏸</button></div>
     </section>
 
     <div class="stage-wrap">
@@ -45,13 +46,25 @@
           <h2>🎯 火柴人狙击</h2>
           <p class="menu-sub" id="menu-best"></p>
           <ul class="rules">
-            <li>移动鼠标 / 手指拖动瞄准，<b>点击开枪</b></li>
+            <li>移动鼠标 / 手指拖动移动瞄准镜，<b>点在镜圈内才开枪</b>，点圈外只是移动镜位</li>
             <li>敌人从窗户探头或在街上跑过，趁机击倒</li>
             <li><b>爆头 250 分</b>、击中身体 100 分，连续命中加成最高 x5</li>
             <li>弹匣 5 发打完自动装填（1.8 秒），按 R 或按钮提前装弹</li>
-            <li>限时内完成击杀数进入下一关，难度逐关提升</li>
+            <li>限时内完成击杀数进入下一关；难度靠敌人跑得越来越快、探头越来越短，<b>顶部 ⏸ 随时暂停</b></li>
           </ul>
           <button id="btn-start" class="btn primary big" type="button">开始狙击</button>
+        </div>
+      </div>
+
+      <!-- 暂停 -->
+      <div id="pause-modal" class="overlay hidden">
+        <div class="panel">
+          <h2>⏸ 已暂停</h2>
+          <p class="menu-sub">时间已冻结，敌人也停住了</p>
+          <div class="row">
+            <button id="btn-resume" class="btn primary big" type="button">继续</button>
+            <button id="btn-quit" class="btn big" type="button">回主菜单</button>
+          </div>
         </div>
       </div>
 
@@ -115,7 +128,7 @@
         '<a href="mailto:' + u + '@' + d + '">' + u + '@' + d + '</a>';
     })();
   </script>
-  <script src="game.js?v=1"></script>
+  <script src="game.js?v=2"></script>
   <script>document.write('<script src="' + window.DB_HOME + '/portal.js" data-app="sniper"><\/script>');</script>
   <script>
     (function () {
