@@ -1,5 +1,5 @@
 /* 火柴人狙击 SW v1 */
-const CACHE = "dbsniper-v7";
+const CACHE = "dbsniper-v8";
 const ASSETS = [
   "./", "./index.html", "./style.css?v=1", "./game.js?v=7",
   "./manifest.json", "./icons/favicon.svg",
