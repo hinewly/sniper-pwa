@@ -1,7 +1,7 @@
 /* 屋顶狙击 v0.3.0 —— 双模式（黄昏狙击 / 正午机枪）+ 蒙面匪 & 灰狼（关卡结构预留方案 C 任务制） */
 (function () {
   "use strict";
-  var APP_VERSION = "v0.3.0";
+  var APP_VERSION = "v0.3.1";
   var SAVE_KEY = "dbsniper-save-v2";
   var $ = function (id) { return document.getElementById(id); };
   var W = 900, H = 560; // 逻辑分辨率
@@ -144,6 +144,13 @@
   var aim = { x: W / 2, y: H / 2 };
   var lastT = 0, shake = 0;
   var canvas, ctx;
+
+  /* ---------- AI 素材（Vidu 生成，白底抠图；未加载完成时回退代码绘制） ---------- */
+  var SPRITES = {};
+  ["sniper", "mg", "bandit-red", "bandit-blue", "wolf", "boss"].forEach(function (n) {
+    var im = new Image(); im.src = "assets/" + n + ".png"; SPRITES[n] = im;
+  });
+  function spr(n) { var im = SPRITES[n]; return (im && im.complete && im.naturalWidth) ? im : null; }
 
   function paletteMode() { return (state === "menu" && previewMode) ? previewMode : mode; }
   function pal() { return PALETTES[paletteMode()]; }
@@ -455,6 +462,29 @@
 
   /* ---------- 玩家（趴姿，狙击枪 / 机枪两套装备） ---------- */
   function drawPlayer() {
+    var im = spr(mode === "mg" ? "mg" : "sniper");
+    if (im) { drawPlayerSprite(im); return; }
+    drawPlayerVector();
+  }
+  function drawPlayerSprite(im) {
+    var w = 310, h = w * im.naturalHeight / im.naturalWidth;
+    var x = 24, bottom = 104;
+    ctx.save();
+    ctx.drawImage(im, x, bottom - h, w, h);
+    if (mode === "mg" && muzzle > 0) {
+      var mx = x + w * 0.97, my = bottom - h * 0.42;
+      ctx.fillStyle = "rgba(255,220,90,.95)";
+      ctx.beginPath();
+      ctx.moveTo(mx, my);
+      ctx.lineTo(mx + 20, my - 9); ctx.lineTo(mx + 12, my); ctx.lineTo(mx + 24, my);
+      ctx.lineTo(mx + 12, my + 5); ctx.lineTo(mx + 20, my + 13);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = "rgba(255,150,60,.9)";
+      ctx.beginPath(); ctx.arc(mx, my, 7, 0, 7); ctx.fill();
+    }
+    ctx.restore();
+  }
+  function drawPlayerVector() {
     ctx.save();
     ctx.translate(-300, 0);
     ctx.shadowColor = paletteMode() === "mg" ? "rgba(255,240,180,.6)" : "rgba(255,190,120,.65)";
@@ -547,6 +577,34 @@
   }
 
   /* ---------- 敌人绘制 ---------- */
+  function drawSpriteEnemy(e, im, body, cx) {
+    var ar = im.naturalWidth / im.naturalHeight;
+    if (e.type === "peek") {
+      if (!e.boss) {
+        ctx.save();
+        ctx.beginPath(); ctx.rect(e.win.x - 2, e.win.y - 2, e.win.w + 4, e.win.h + 4); ctx.clip();
+        var h1 = 68, w1 = h1 * ar;
+        ctx.drawImage(im, cx - w1 / 2, e.win.y + e.win.h + 2 - h1, w1, h1);
+        ctx.restore();
+      } else {
+        var h2 = 74, w2 = h2 * ar;
+        ctx.drawImage(im, cx - w2 / 2, e.win.y + e.win.h + 6 - h2, w2, h2);
+      }
+    } else if (e.type === "runner") {
+      var h3 = 58, w3 = h3 * ar;
+      var bounce = Math.abs(Math.sin((e.anim || 0) * 9)) * 4;
+      ctx.save();
+      if (e.dir === -1) { ctx.translate(cx, 0); ctx.scale(-1, 1); ctx.translate(-cx, 0); }
+      ctx.drawImage(im, cx - w3 / 2, body.y + body.h - h3 + bounce, w3, h3);
+      ctx.restore();
+    } else if (e.type === "wolf") {
+      var h4 = 44, w4 = h4 * ar;
+      ctx.save();
+      if (e.dir === -1) { ctx.translate(cx, 0); ctx.scale(-1, 1); ctx.translate(-cx, 0); }
+      ctx.drawImage(im, cx - w4 / 2, body.y + body.h - h4 + 8, w4, h4);
+      ctx.restore();
+    }
+  }
   function drawEnemy(e) {
     var body = enemyBody(e);
     if (!body) return;
@@ -562,6 +620,11 @@
     ctx.shadowColor = "rgba(255,190,120,.8)"; ctx.shadowBlur = 12;
     ctx.lineCap = "round";
     var cx = body.x + body.w / 2;
+
+    var spim = e.type === "peek" ? spr(e.boss ? "boss" : "bandit-red")
+      : e.type === "runner" ? spr("bandit-blue")
+      : e.type === "wolf" ? spr("wolf") : null;
+    if (spim) { drawSpriteEnemy(e, spim, body, cx); ctx.restore(); return; }
 
     if (e.type === "peek") {
       var my = body.y + body.h;

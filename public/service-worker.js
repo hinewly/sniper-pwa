@@ -1,8 +1,10 @@
 /* 屋顶狙击 SW v9 */
-const CACHE = "dbsniper-v9";
+const CACHE = "dbsniper-v10";
 const ASSETS = [
-  "./", "./index.html", "./style.css?v=2", "./game.js?v=8",
+  "./", "./index.html", "./style.css?v=2", "./game.js?v=9",
   "./manifest.json", "./icons/favicon.svg",
+  "./assets/sniper.png", "./assets/mg.png", "./assets/bandit-red.png",
+  "./assets/bandit-blue.png", "./assets/wolf.png", "./assets/boss.png",
   "./icons/icon-48.png", "./icons/icon-64.png", "./icons/icon-192.png", "./icons/icon-512.png"
 ];
 self.addEventListener("install", (e) => {
