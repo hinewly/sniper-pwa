@@ -8,19 +8,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>屋顶狙击 · DaoBox 休闲射击</title>
-  <meta name="description" content="DaoBox 屋顶狙击：趴在屋顶架起狙击枪，等猴子探头、兔子蹦过、小鸟低飞，一枪正中！卡通画风，免费畅玩。">
+  <meta name="description" content="DaoBox 屋顶狙击：黄昏狙击模式一枪爆头，正午机枪模式火力压制，蒙面匪、金链老大、灰狼轮番上阵！卡通竞技画风，免费畅玩。">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-  <meta name="theme-color" content="#1a2233">
-  <link rel="stylesheet" href="style.css?v=1">
+  <meta name="theme-color" content="#a86a52">
+  <link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
   <header class="topbar">
     <div class="topbar-inner">
       <div class="brand">🎯 屋顶狙击</div>
       <div class="topbar-tools">
-        <span class="version-badge" id="app-version">v0.1.0</span>
+        <span class="version-badge" id="app-version">v0.3.0</span>
         <button class="refresh-btn" id="refresh-btn" type="button" title="强制刷新">↻</button>
         <button class="refresh-btn" id="btn-mute" type="button" title="音效开关">🔊</button>
       </div>
@@ -31,7 +31,7 @@
   <main class="page">
     <section class="hud">
       <div class="score-box"><div class="score-label" id="hud-level">准备</div><div class="score-value small" id="hud-time">—</div></div>
-      <div class="score-box"><div class="score-label">弹匣</div><div class="score-value small" id="hud-mag">5/5</div></div>
+      <div class="score-box"><div class="score-label" id="hud-mag-label">弹匣</div><div class="score-value small" id="hud-mag">5/5</div></div>
       <div class="score-box"><div class="score-label">得分</div><div class="score-value" id="hud-score">0</div></div>
       <div class="score-box"><div class="score-label" id="hud-combo"></div><button id="btn-reload" class="btn small" type="button">装弹 R</button>
           <button id="btn-pause" class="btn small" type="button" title="暂停">⏸</button></div>
@@ -40,20 +40,31 @@
     <div class="stage-wrap">
       <canvas id="game" class="stage"></canvas>
 
-      <!-- 开始菜单 -->
+      <!-- 开始菜单：双模式选择 -->
       <div id="menu" class="overlay">
         <div class="panel">
-          <h2>🎯 火柴人狙击</h2>
+          <h2>🎯 屋顶狙击</h2>
           <p class="menu-sub" id="menu-best"></p>
-          <ul class="rules">
-            <li>移动鼠标 / 手指拖动移动瞄准镜，<b>点在镜圈内才开枪</b>，点圈外只是移动镜位</li>
-            <li>你就趴在画面顶端的屋顶上架着狙击枪，俯视整个街区</li>
-            <li>🦁 目标动物：猴子从窗户探头、兔子横穿马路、小鸟低空飞过（都有红色标记）</li>
-            <li><b>爆头 250 分</b>、击中身体 100 分，连续命中加成最高 x5</li>
-            <li>弹匣 5 发打完自动装填（1.8 秒），按 R 或按钮提前装弹</li>
-            <li>限时内完成击杀数进入下一关；难度靠敌人跑得越来越快、探头越来越短，<b>顶部 ⏸ 随时暂停</b></li>
+          <div class="mode-row">
+            <button id="btn-mode-sniper" class="btn mode-btn mode-sniper" type="button">
+              <span class="mode-icon">🎯</span>
+              <span class="mode-name">狙击模式</span>
+              <span class="mode-desc">黄昏潜伏 · 瞄准镜一枪爆头</span>
+            </button>
+            <button id="btn-mode-mg" class="btn mode-btn mode-mg" type="button">
+              <span class="mode-icon">🔫</span>
+              <span class="mode-name">机枪模式</span>
+              <span class="mode-desc">正午扫射 · 火力压制刷分</span>
+            </button>
+          </div>
+          <ul class="rules" id="rules-menu">
+            <li>移动鼠标 / 手指拖动准星；<b>狙击模式</b>点在镜圈内才开枪，<b>机枪模式</b>按住即连发扫射</li>
+            <li>🎯 狙击模式 = 黄昏潜伏：瞄准镜圈 + 呼吸晃动，5 发弹匣，正中 250 分</li>
+            <li>🔫 机枪模式 = 正午扫射：全屏可见火力压制，枪管过热强制冷却 1.6 秒</li>
+            <li>目标：红头巾蒙面匪探头、蓝头巾匪奔逃、灰狼疾跑 S 形走位、小鸟低飞</li>
+            <li><b>金链老大</b>稀有出现（第 2 关起）：正中 500 分，探头时间更短</li>
+            <li>连击加成最高 x5，限时完成击杀进入下一关；顶部 ⏸ 随时暂停</li>
           </ul>
-          <button id="btn-start" class="btn primary big" type="button">开始狙击</button>
         </div>
       </div>
 
@@ -104,11 +115,11 @@
     <section class="tips">
       <h2>玩法说明</h2>
       <ul>
-        <li>经典光枪狙击玩法：瞄准镜外全黑，只有镜内可见，目标随时出现。</li>
-        <li>准星有轻微呼吸晃动，越往后晃得越厉害，考验屏息时机。</li>
-        <li>击中身体 100 分、爆头 250 分，连续命中分数最高 x5，脱靶重置连击。</li>
-        <li>关卡目标：限时内击倒规定数量目标；每关时间、敌人手速、准星晃动递增。</li>
-        <li>卡通竞技打靶风格（目标全是小动物），无血腥内容；完全免费，不含任何充值、金币或抽奖。</li>
+        <li>双模式任选：<b>狙击模式</b>黄昏金时刻潜伏，瞄准镜外暖色暗化，考验屏息时机；<b>机枪模式</b>正午大晴天全屏扫射，枪管会过热。</li>
+        <li>目标阵容：红头巾蒙面匪（窗口探头）、蓝头巾蒙面匪（街面奔逃）、金链老大（稀有高分）、灰狼（疾跑 S 形走位）、小鸟（低空飞行）。</li>
+        <li>狙击模式击中 100 分、正中 250 分，金链老大 300/500 分；机枪模式单发 40/70 分但射速快；连续命中分数最高 x5，脱靶重置连击。</li>
+        <li>关卡目标：限时内击倒规定数量目标；每关时间、敌人速度、探头时长递增，狙击模式准星晃动递增。</li>
+        <li>卡通竞技打靶风格，无血腥内容；完全免费，不含任何充值、金币或抽奖。</li>
       </ul>
     </section>
   </main>
@@ -127,7 +138,7 @@
         '<a href="mailto:' + u + '@' + d + '">' + u + '@' + d + '</a>';
     })();
   </script>
-  <script src="game.js?v=7"></script>
+  <script src="game.js?v=8"></script>
   <script>document.write('<script src="' + window.DB_HOME + '/portal.js" data-app="sniper"><\/script>');</script>
   <script>
     (function () {
@@ -143,7 +154,7 @@
         navigator.serviceWorker.register('./service-worker.js').catch(function () {});
       });
     }
-  
+
       // 切回前台时触发 SW 更新检查（覆盖长期不关闭的页面，方案A）
       document.addEventListener('visibilitychange', function () {
         if (document.visibilityState !== 'visible' || !('serviceWorker' in navigator)) return;
