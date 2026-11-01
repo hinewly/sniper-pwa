@@ -1,6 +1,6 @@
 # 屋顶狙击 v0.3.0 双模式改版 交接
 
-- last_updated: 2026-11-02 03:15
+- last_updated: 2026-11-02 03:40
 - status: active
 - version: v0.3.0
 
@@ -13,8 +13,12 @@
 用户反馈：角色要用 Vidu AI 生成（复用钓鱼橙鲤鱼管线），不要代码手绘。已用 chrome-vidu-profile CDP（9333）在 Vidu 文生图片/参考生图生成：
 - ✅ 1号狙击手趴姿（文生图片，6 积分）
 - ✅ 2号机枪手趴姿（参考生图，用1号当参考，6 积分；踩坑：参考生图提示词是 tiptap 富文本编辑器不是 textarea，须点 .tiptap.ProseMirror 键入；首次误提交空提示词 0 积分出废图）
-- 剩余：红头巾匪/蓝头巾匪/灰狼/金链老大 + 抠图接进 game.js（碰撞框不变）→ v0.3.1
-- 积分余 ~766。等用户确认 1、2 号效果后继续。
+- ✅ 用户确认后继续：红头巾匪/蓝头巾匪/灰狼/金链老大 4 张全部生成（各 6 积分，剩 ~742）
+- ✅ 抠图（cv2 边缘洪泛法，保留角色+道具多连通域）→ public/assets/*.png 共 6 张
+- ✅ 接入 game.js：SPRITES 预加载，drawPlayer/drawEnemy 贴图优先、代码绘制兜底，碰撞判定框全部未动；跑动/死亡翻倒动画沿用代码
+- ✅ v0.3.1（game.js?v=9 + SW dbsniper-v10）本地 E2E + 线上冒烟全过，无页面报错
+- ✅ 已部署 https://sniper.daobox.net.cn（commit 21d105a 已 push；线上 6 张贴图全 200）
+- 待用户早上验收：画风、人物形象、贴图大小/位置手感
 
 ✅ v0.3.0 已上线 https://sniper.daobox.net.cn（commit bc846d8 已 push；rsync 整项目 → /opt/sniper-pwa，线上 index/game.js?v=8/SW dbsniper-v9 全 200，线上冒烟 E2E 通过无报错）。待用户看截图反馈 + 手机实测。
 
