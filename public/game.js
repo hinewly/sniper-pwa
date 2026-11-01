@@ -1,7 +1,7 @@
 /* 屋顶狙击 v0.3.0 —— 双模式（黄昏狙击 / 正午机枪）+ 蒙面匪 & 灰狼（关卡结构预留方案 C 任务制） */
 (function () {
   "use strict";
-  var APP_VERSION = "v0.3.1";
+  var APP_VERSION = "v0.3.2";
   var SAVE_KEY = "dbsniper-save-v2";
   var $ = function (id) { return document.getElementById(id); };
   var W = 900, H = 560; // 逻辑分辨率
@@ -99,10 +99,10 @@
     o.connect(g); g.connect(a.destination); o.start(); o.stop(a.currentTime + dur);
   }
   var SFX = {
-    shot: function () { noiseBurst(0.22, 900, 0.5); tone(180, 60, 0.18, "triangle", 0.3); },
-    mgShot: function () { noiseBurst(0.09, 1300, 0.34); tone(150, 95, 0.07, "square", 0.16); },
-    head: function () { tone(880, 1500, 0.22, "sine", 0.22); noiseBurst(0.1, 2400, 0.18); },
-    body: function () { tone(160, 90, 0.16, "triangle", 0.25); },
+    shot: function () { noiseBurst(0.28, 1200, 0.95); tone(320, 70, 0.22, "square", 0.4); tone(180, 50, 0.3, "triangle", 0.35); },
+    mgShot: function () { noiseBurst(0.1, 1600, 0.6); tone(420, 160, 0.07, "square", 0.28); tone(160, 90, 0.09, "triangle", 0.2); },
+    head: function () { tone(880, 1500, 0.22, "sine", 0.3); noiseBurst(0.1, 2600, 0.3); },
+    body: function () { tone(360, 120, 0.16, "square", 0.35); tone(160, 90, 0.16, "triangle", 0.25); },
     miss: function () { noiseBurst(0.06, 3000, 0.08); },
     empty: function () { tone(900, 700, 0.05, "square", 0.08); },
     overheat: function () { tone(320, 70, 0.55, "sawtooth", 0.16); },
@@ -302,8 +302,12 @@
     if (e.type === "peek") {
       if (e.phase === "rise" && t < 0.5) return null;
       var hh = e.phase === "rise" ? Math.min(1, t / 0.3) : 1;
-      var top = e.win.y + e.win.h - 66 * hh;
-      return { x: e.win.x + 4, y: top, w: e.win.w - 8, h: 66 * hh, hx: e.x, hy: top + 10, hr: 13 };
+      if (e.boss) {
+        var topB = e.win.y + e.win.h - 66 * hh;
+        return { x: e.win.x + 4, y: topB, w: e.win.w - 8, h: 66 * hh, hx: e.x, hy: topB + 12, hr: 13 };
+      }
+      // 普通蒙面匪：贴图完整显示在窗口内，判定与可见区域一致
+      return { x: e.win.x + 4, y: e.win.y, w: e.win.w - 8, h: e.win.h, hx: e.x, hy: e.win.y + 8, hr: 12 };
     }
     var bob = Math.sin(t * 9) * 5;
     var fly = e.type === "flyer" ? Math.sin(t * 6) * 14 : 0;
@@ -583,7 +587,7 @@
       if (!e.boss) {
         ctx.save();
         ctx.beginPath(); ctx.rect(e.win.x - 2, e.win.y - 2, e.win.w + 4, e.win.h + 4); ctx.clip();
-        var h1 = 68, w1 = h1 * ar;
+        var h1 = e.win.h + 4, w1 = h1 * ar;
         ctx.drawImage(im, cx - w1 / 2, e.win.y + e.win.h + 2 - h1, w1, h1);
         ctx.restore();
       } else {
