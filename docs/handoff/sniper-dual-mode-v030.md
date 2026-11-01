@@ -10,7 +10,7 @@
 
 ## 当前状态
 
-本地开发 + E2E 完成，待用户看截图确认后 push + 部署国内站。
+✅ v0.3.0 已上线 https://sniper.daobox.net.cn（commit bc846d8 已 push；rsync 整项目 → /opt/sniper-pwa，线上 index/game.js?v=8/SW dbsniper-v9 全 200，线上冒烟 E2E 通过无报错）。待用户看截图反馈 + 手机实测。
 
 ## 最近完成
 
@@ -26,7 +26,7 @@
 
 ## 待办
 
-- [ ] 用户确认截图效果 → push + rsync 部署国内站 + 线上验证
+- [x] push + rsync 部署国内站 + 线上验证（2026-11-02 完成，线上冒烟 E2E 通过）
 - [ ] 手机实测：机枪模式按住扫射的触屏手感
 - [ ] 平衡性调参（依用户反馈）：MG_RATE/HEAT_SHOT/灰狼出现率/老大分值
 - [ ] 二期方案 C 任务制关卡（mission 字段已预留）
@@ -48,3 +48,7 @@
 
 - public/game.js（重写核心）、index.html（菜单/HUD/文案）、style.css（暖色主题重写）、service-worker.js（v9）、manifest.json（theme 色）
 - 截图：_temp-screenshots/2026-11/狙击v0.3.0-*.png（README 已登记）
+
+## 部署踩坑记录
+
+- 部署目标 = 整个项目目录（public/ + server/）→ /opt/sniper-pwa/，node-server 从脚本上级的 public/ 提供服务；曾误用「rsync public/ 到 /opt/sniper-pwa/ 且 --delete」把线上 public/ 删掉造成短暂 404，已修复并验证。正确命令：rsync 整项目（排除 .git/docs/node_modules）到 /opt/sniper-pwa/
