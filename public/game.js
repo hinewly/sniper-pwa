@@ -1,7 +1,7 @@
 /* 屋顶狙击 v0.4.1 —— 双模式（黄昏狙击 / 正午机枪）+ 蒙面匪 & 灰狼（关卡结构预留方案 C 任务制） */
 (function () {
   "use strict";
-  var APP_VERSION = "v0.4.6";
+  var APP_VERSION = "v0.4.7";
   var SAVE_KEY = "dbsniper-save-v2";
   var $ = function (id) { return document.getElementById(id); };
   var W = 900, H = 560; // 逻辑分辨率
@@ -24,7 +24,7 @@
   var selectedLevel = 1;
   var MAG = 5, RELOAD_MS = 1800;
   /* 机枪参数 */
-  var MG_RATE = 130, HEAT_SHOT = 7, COOL_RATE = 34, OVERHEAT_LOCK = 1600, MG_HEAD = 70, MG_BODY = 40;
+  var MG_RATE = 130, HEAT_SHOT = 7, COOL_RATE = 34, OVERHEAT_LOCK = 1600, MG_HEAD = 7, MG_BODY = 4;
 
   /* ---------- 双模式配色（狙击=黄昏金时刻 / 机枪=正午大晴天） ---------- */
   var PALETTES = {
@@ -300,7 +300,8 @@
 
   function registerHit(hit, p, basePts, headTxt) {
     combo++;
-    var mult = Math.min(combo, 5);
+    if (hit.e.boss) basePts *= 2; // 金链老大：稀有双倍
+    var mult = Math.min(combo, 3);
     var pts = basePts * mult;
     score += pts;
     kills++;
@@ -321,7 +322,7 @@
     mag--; shake = 7; SFX.shot();
     var p = reticle();
     var hit = pickHit(p);
-    if (hit) registerHit(hit, p, hit.part === "head" ? 250 : 100, "正中");
+    if (hit) registerHit(hit, p, hit.part === "head" ? 25 : 10, "正中");
     else {
       combo = 0; SFX.miss();
       holes.push({ x: p.x, y: p.y, t: 0 });
@@ -880,7 +881,7 @@
       $("hud-mag").className = reloading > 0 ? "warn" : "";
     }
     $("hud-score").textContent = score;
-    $("hud-combo").textContent = combo > 1 ? "连击 x" + Math.min(combo, 5) : "";
+    $("hud-combo").textContent = combo > 1 ? "连击 x" + Math.min(combo, 3) : "";
     $("hud-level").textContent = "第 " + level + " 关 · 剩余 " + Math.max(0, cfg ? cfg.quota - kills : 0) + " 只";
   }
   function log(msg) { $("hud-level").textContent = msg; }
@@ -914,7 +915,7 @@
     renderLevelChips();
     $("menu").classList.remove("hidden");
     $("menu-best").innerHTML =
-      "🎯 狙击最高 " + (save.bestSniper || 0) + " · <img class=\"inline-mg\" src=\"assets/mg-icon.png\" alt=\"机枪\" draggable=\"false\"> 机枪最高 " + (save.bestMg || 0) +
+      "🎯 狙击战绩最高 " + (save.bestSniper || 0) + " · <img class=\"inline-mg\" src=\"assets/mg-icon.png\" alt=\"机枪\" draggable=\"false\"> 机枪战绩最高 " + (save.bestMg || 0) +
       (save.maxLevel ? " · 已通第 " + save.maxLevel + " 关" : " · 首次出击，祝好运！");
   }
   function setClearReward(cls, text) {
@@ -973,7 +974,7 @@
     state = "gameover"; SFX.over();
     if (score > bestOf()) { if (mode === "sniper") save.bestSniper = score; else save.bestMg = score; }
     persist();
-    $("over-info").textContent = "第 " + level + " 关 · 得分 " + score + " · " +
+    $("over-info").textContent = "第 " + level + " 关 · 战绩 " + score + " · " +
       (mode === "sniper" ? "狙击" : "机枪") + "最高分 " + bestOf();
     $("over-modal").classList.remove("hidden");
     updateHud();

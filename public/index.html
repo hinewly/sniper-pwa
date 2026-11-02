@@ -32,7 +32,7 @@
     <section class="hud">
       <div class="score-box"><div class="score-label" id="hud-level">准备</div><div class="score-value small" id="hud-time">—</div></div>
       <div class="score-box"><div class="score-label" id="hud-mag-label">弹匣</div><div class="score-value small" id="hud-mag">5/5</div></div>
-      <div class="score-box"><div class="score-label">得分</div><div class="score-value" id="hud-score">0</div></div>
+      <div class="score-box"><div class="score-label">战绩</div><div class="score-value" id="hud-score">0</div></div>
       <div class="score-box"><div class="score-label" id="hud-combo"></div><button id="btn-reload" class="btn small" type="button">装弹 R</button>
           <button id="btn-pause" class="btn small" type="button" title="暂停">⏸</button></div>
     </section>
@@ -77,11 +77,11 @@
             <ul class="rules" id="rules-menu">
             <li>移动鼠标 / 手指拖动准星；<b>狙击模式</b>点在镜圈内才开枪，<b>机枪模式</b>按住即连发扫射</li>
             <li>共 <b>10 关</b>，限时消灭目标过关；首通积分只发一次</li>
-            <li class="extra">🎯 狙击模式 = 黄昏潜伏：瞄准镜圈 + 呼吸晃动，5 发弹匣，正中 250 分</li>
+            <li class="extra">🎯 狙击模式 = 黄昏潜伏：瞄准镜圈 + 呼吸晃动，5 发弹匣，爆头 25 分</li>
             <li class="extra"><img class="inline-mg" src="assets/mg-icon.png" alt="机枪" draggable="false"> 机枪模式 = 正午扫射：全屏可见火力压制，枪管过热强制冷却 1.6 秒</li>
             <li class="extra">目标：红头巾蒙面匪探头、蓝头巾匪奔逃、灰狼贴地疾跑、小鸟低飞</li>
-            <li class="extra"><b>金链老大</b>稀有出现（第 2 关起）：正中 500 分，探头时间更短</li>
-            <li>连击加成最高 x5；顶部 ⏸ 随时暂停</li>
+            <li class="extra"><b>金链老大</b>稀有出现（第 2 关起）：分数双倍（爆头 50），探头时间更短</li>
+            <li>连击加成最高 x3；顶部 ⏸ 随时暂停；<b>游戏战绩仅用于挑战</b>，⭐积分以过关首通奖励为准</li>
             </ul>
           </details>
         </div>
@@ -140,7 +140,7 @@
       <ul>
         <li>双模式任选：<b>狙击模式</b>黄昏金时刻潜伏，瞄准镜外暖色暗化，考验屏息时机；<b>机枪模式</b>正午大晴天全屏扫射，枪管会过热。</li>
         <li>目标阵容：红头巾蒙面匪（窗口探头）、蓝头巾蒙面匪（街面奔逃）、金链老大（稀有高分）、灰狼（贴地疾跑）、小鸟（低空飞行）。</li>
-        <li>狙击模式击中 100 分、正中 250 分，金链老大 300/500 分；机枪模式单发 40/70 分但射速快；连续命中分数最高 x5，脱靶重置连击。</li>
+        <li>狙击模式击中 10 分、爆头 25 分，金链老大分数双倍（爆头 50）；机枪模式单发 4/7 分但射速快；连续命中最高 x3，脱靶重置连击。游戏战绩仅用于挑战，⭐积分以过关首通奖励为准。</li>
         <li>关卡目标：限时内击倒规定数量目标；每关时间、敌人速度、探头时长递增，狙击模式准星晃动递增。</li>
         <li>卡通竞技打靶风格，无血腥内容；完全免费，不含任何充值、金币或抽奖。</li>
       </ul>
@@ -161,7 +161,7 @@
         '<a href="mailto:' + u + '@' + d + '">' + u + '@' + d + '</a>';
     })();
   </script>
-  <script src="game.js?v=17"></script>
+  <script src="game.js?v=18"></script>
   <script>document.write('<script src="' + window.DB_HOME + '/portal.js" data-app="sniper"><\/script>');</script>
   <script>
     (function () {
