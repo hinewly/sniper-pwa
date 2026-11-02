@@ -1,7 +1,7 @@
 /* 屋顶狙击 v0.4.1 —— 双模式（黄昏狙击 / 正午机枪）+ 蒙面匪 & 灰狼（关卡结构预留方案 C 任务制） */
 (function () {
   "use strict";
-  var APP_VERSION = "v0.4.3";
+  var APP_VERSION = "v0.4.4";
   var SAVE_KEY = "dbsniper-save-v2";
   var $ = function (id) { return document.getElementById(id); };
   var W = 900, H = 560; // 逻辑分辨率
@@ -904,8 +904,8 @@
     state = "menu"; previewMode = null;
     renderLevelChips();
     $("menu").classList.remove("hidden");
-    $("menu-best").textContent =
-      "🎯 狙击最高 " + (save.bestSniper || 0) + " · 🔫 机枪最高 " + (save.bestMg || 0) +
+    $("menu-best").innerHTML =
+      "🎯 狙击最高 " + (save.bestSniper || 0) + " · <img class=\"inline-mg\" src=\"assets/mg-icon.png\" alt=\"机枪\" draggable=\"false\"> 机枪最高 " + (save.bestMg || 0) +
       (save.maxLevel ? " · 已通第 " + save.maxLevel + " 关" : " · 首次出击，祝好运！");
   }
   function setClearReward(cls, text) {
