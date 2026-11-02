@@ -1,7 +1,7 @@
 /* 屋顶狙击 v0.4.1 —— 双模式（黄昏狙击 / 正午机枪）+ 蒙面匪 & 灰狼（关卡结构预留方案 C 任务制） */
 (function () {
   "use strict";
-  var APP_VERSION = "v0.4.2";
+  var APP_VERSION = "v0.4.3";
   var SAVE_KEY = "dbsniper-save-v2";
   var $ = function (id) { return document.getElementById(id); };
   var W = 900, H = 560; // 逻辑分辨率
@@ -105,11 +105,28 @@
     g.gain.exponentialRampToValueAtTime(0.001, a.currentTime + dur);
     o.connect(g); g.connect(a.destination); o.start(); o.stop(a.currentTime + dur);
   }
+  // 角色叫声合成器：f0→f1 滑音 + 可选颤音（LFO），用于惨叫/鸟惊叫/狼哀嚎
+  function cry(f0, f1, dur, type, gain, vibHz, vibDepth) {
+    var a = ac(); if (!a || save.muted) return;
+    var o = a.createOscillator(), g = a.createGain();
+    o.type = type || "sawtooth";
+    o.frequency.setValueAtTime(f0, a.currentTime);
+    o.frequency.exponentialRampToValueAtTime(f1, a.currentTime + dur);
+    if (vibHz) {
+      var l = a.createOscillator(), lg = a.createGain();
+      l.frequency.value = vibHz; lg.gain.value = vibDepth || f0 * 0.06;
+      l.connect(lg); lg.connect(o.frequency);
+      l.start(); l.stop(a.currentTime + dur);
+    }
+    g.gain.setValueAtTime(gain, a.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, a.currentTime + dur);
+    o.connect(g); g.connect(a.destination); o.start(); o.stop(a.currentTime + dur);
+  }
   var SFX = {
     shot: function () { noiseBurst(0.28, 1200, 0.95); tone(320, 70, 0.22, "square", 0.4); tone(180, 50, 0.3, "triangle", 0.35); },
     mgShot: function () { noiseBurst(0.1, 1600, 0.6); tone(420, 160, 0.07, "square", 0.28); tone(160, 90, 0.09, "triangle", 0.2); },
-    head: function () { tone(880, 1500, 0.22, "sine", 0.3); noiseBurst(0.1, 2600, 0.3); },
-    body: function () { tone(360, 120, 0.16, "square", 0.35); tone(160, 90, 0.16, "triangle", 0.25); },
+    head: function () { tone(880, 1500, 0.22, "sine", 0.38); noiseBurst(0.1, 2600, 0.32); },
+    body: function () { tone(360, 120, 0.16, "square", 0.4); tone(160, 90, 0.16, "triangle", 0.3); },
     step: function (kind, x) {
       var pan = Math.max(-1, Math.min(1, (x / W) * 2 - 1));
       if (kind === "wolf") noiseBurst(0.05, 900, 0.075, pan);
@@ -118,11 +135,29 @@
     hitFor: function (e, part) {
       if (part === "head") this.head(); else this.body();
       setTimeout(function () {
-        if (e.type === "flyer") { tone(1500, 900, 0.12, "sine", 0.14); noiseBurst(0.08, 3200, 0.10); }
-        else if (e.type === "wolf") { tone(220, 80, 0.26, "sawtooth", 0.16); noiseBurst(0.09, 900, 0.16); }
-        else if (e.boss) { tone(180, 60, 0.28, "square", 0.18); noiseBurst(0.12, 700, 0.20); }
-        else { tone(520, 180, 0.16, "triangle", 0.14); noiseBurst(0.07, 1600, 0.14); }
-      }, 45);
+        if (e.type === "flyer") {
+          // 鸟惊叫：两声急促下鸣 + 扑翅噪声
+          cry(2300, 1000, 0.13, "sine", 0.5, 30, 120);
+          setTimeout(function () { cry(1900, 750, 0.11, "sine", 0.4, 28, 90); }, 90);
+          noiseBurst(0.09, 3400, 0.22);
+        } else if (e.type === "wolf") {
+          // 狼哀嚎：呜咽下滑
+          cry(620, 170, 0.34, "sawtooth", 0.42, 18, 55);
+          cry(1250, 480, 0.22, "sine", 0.22);
+          noiseBurst(0.1, 1100, 0.2);
+        } else if (e.boss) {
+          // 金链老大：低沉闷哼 + 重物倒地
+          cry(210, 62, 0.4, "square", 0.45, 12, 16);
+          noiseBurst(0.14, 620, 0.3);
+          setTimeout(function () { noiseBurst(0.18, 380, 0.35); }, 130);
+        } else {
+          // 土匪惨叫：啊——（爆头更尖）
+          var hi = part === "head";
+          cry(hi ? 820 : 680, hi ? 300 : 230, 0.38, "sawtooth", 0.46, 22, 45);
+          cry(1200, 420, 0.3, "triangle", 0.2);
+          noiseBurst(0.12, 1900, 0.2);
+        }
+      }, 60);
     },
     miss: function () { noiseBurst(0.06, 3000, 0.08); },
     empty: function () { tone(900, 700, 0.05, "square", 0.08); },
