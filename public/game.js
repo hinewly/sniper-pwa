@@ -1,7 +1,7 @@
-/* 屋顶狙击 v0.4.0 —— 双模式（黄昏狙击 / 正午机枪）+ 蒙面匪 & 灰狼（关卡结构预留方案 C 任务制） */
+/* 屋顶狙击 v0.4.1 —— 双模式（黄昏狙击 / 正午机枪）+ 蒙面匪 & 灰狼（关卡结构预留方案 C 任务制） */
 (function () {
   "use strict";
-  var APP_VERSION = "v0.4.0";
+  var APP_VERSION = "v0.4.1";
   var SAVE_KEY = "dbsniper-save-v2";
   var $ = function (id) { return document.getElementById(id); };
   var W = 900, H = 560; // 逻辑分辨率
@@ -73,14 +73,18 @@
   /* ---------- 音效（WebAudio 合成，零素材） ---------- */
   var AC = null;
   function ac() { if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } return AC; }
-  function noiseBurst(dur, freq, gain) {
+  function noiseBurst(dur, freq, gain, pan) {
     var a = ac(); if (!a || save.muted) return;
     var len = a.sampleRate * dur, buf = a.createBuffer(1, len, a.sampleRate), d = buf.getChannelData(0);
     for (var i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2);
     var src = a.createBufferSource(); src.buffer = buf;
     var f = a.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = freq;
     var g = a.createGain(); g.gain.value = gain;
-    src.connect(f); f.connect(g); g.connect(a.destination); src.start();
+    if (a.createStereoPanner && typeof pan === "number") {
+      var p = a.createStereoPanner(); p.pan.value = Math.max(-1, Math.min(1, pan));
+      src.connect(f); f.connect(g); g.connect(p); p.connect(a.destination);
+    } else { src.connect(f); f.connect(g); g.connect(a.destination); }
+    src.start();
   }
   function tone(f0, f1, dur, type, gain) {
     var a = ac(); if (!a || save.muted) return;
@@ -96,6 +100,20 @@
     mgShot: function () { noiseBurst(0.1, 1600, 0.6); tone(420, 160, 0.07, "square", 0.28); tone(160, 90, 0.09, "triangle", 0.2); },
     head: function () { tone(880, 1500, 0.22, "sine", 0.3); noiseBurst(0.1, 2600, 0.3); },
     body: function () { tone(360, 120, 0.16, "square", 0.35); tone(160, 90, 0.16, "triangle", 0.25); },
+    step: function (kind, x) {
+      var pan = Math.max(-1, Math.min(1, (x / W) * 2 - 1));
+      if (kind === "wolf") noiseBurst(0.05, 900, 0.075, pan);
+      else noiseBurst(0.045, 1400, 0.07, pan);
+    },
+    hitFor: function (e, part) {
+      if (part === "head") this.head(); else this.body();
+      setTimeout(function () {
+        if (e.type === "flyer") { tone(1500, 900, 0.12, "sine", 0.14); noiseBurst(0.08, 3200, 0.10); }
+        else if (e.type === "wolf") { tone(220, 80, 0.26, "sawtooth", 0.16); noiseBurst(0.09, 900, 0.16); }
+        else if (e.boss) { tone(180, 60, 0.28, "square", 0.18); noiseBurst(0.12, 700, 0.20); }
+        else { tone(520, 180, 0.16, "triangle", 0.14); noiseBurst(0.07, 1600, 0.14); }
+      }, 45);
+    },
     miss: function () { noiseBurst(0.06, 3000, 0.08); },
     empty: function () { tone(900, 700, 0.05, "square", 0.08); },
     overheat: function () { tone(320, 70, 0.55, "sawtooth", 0.16); },
@@ -188,7 +206,7 @@
         type: wolf ? "wolf" : "runner", dir: dir,
         x: dir === 1 ? -40 : W + 40, y: 500, baseY: 500,
         speed: (wolf ? 95 + Math.random() * 45 : 55 + Math.random() * 40) * cfg.sway + level * 6,
-        phase: Math.random() * 7, state: "walk", anim: 0
+        phase: Math.random() * 7, state: "walk", anim: 0, stepT: 0.12
       });
       runnersAlive++;
     } else {
@@ -234,8 +252,9 @@
     kills++;
     hit.e.state = "dying"; hit.e.anim = 0;
     if (hit.e.type === "runner" || hit.e.type === "wolf") runnersAlive--;
-    if (hit.part === "head") { SFX.head(); floatText(p.x, p.y - 30, headTxt + " +" + pts, "#ffd66b"); }
-    else { SFX.body(); floatText(p.x, p.y - 30, "+" + pts, "#9fe8b8"); }
+    SFX.hitFor(hit.e, hit.part);
+    if (hit.part === "head") floatText(p.x, p.y - 30, headTxt + " +" + pts, "#ffd66b");
+    else floatText(p.x, p.y - 30, "+" + pts, "#9fe8b8");
     updateHud();
     if (kills >= cfg.quota) { setTimeout(levelClear, 600); }
   }
@@ -297,8 +316,8 @@
       if (e.phase === "rise" && t < 0.5) return null;
       var hh = e.phase === "rise" ? Math.min(1, t / 0.3) : 1;
       if (e.boss) {
-        var topB = e.win.y + e.win.h - 66 * hh;
-        return { x: e.win.x + 4, y: topB, w: e.win.w - 8, h: 66 * hh, hx: e.x, hy: topB + 12, hr: 13 };
+        var topB = e.win.y + e.win.h + 4 - 104 * hh;
+        return { x: e.x - 72 * hh, y: topB + 16 * hh, w: 144 * hh, h: 88 * hh, hx: e.x - 5, hy: topB + 24 * hh, hr: 15 };
       }
       // 普通蒙面匪：贴图完整显示在窗口内，判定与可见区域一致
       return { x: e.win.x + 4, y: e.win.y, w: e.win.w - 8, h: e.win.h, hx: e.x, hy: e.win.y + 8, hr: 12 };
@@ -349,10 +368,16 @@
         } else if ((e.type === "runner" || e.type === "flyer") && e.state === "walk") {
           e.x += e.speed * dt * e.dir;
           if (e.x < -50 || e.x > W + 50) { e.state = "gone"; if (e.type === "runner") runnersAlive--; else flyersAlive--; }
+          if (e.type === "runner") {
+            e.stepT -= dt;
+            if (e.stepT <= 0) { SFX.step("runner", e.x); e.stepT = 0.28; }
+          }
         } else if (e.type === "wolf" && e.state === "walk") {
           e.x += e.speed * dt * e.dir;
-          e.y = e.baseY + Math.sin(e.anim * 2.6) * 38; // S 形走位
+          e.y = e.baseY;
           if (e.x < -60 || e.x > W + 60) { e.state = "gone"; runnersAlive--; }
+          e.stepT -= dt;
+          if (e.stepT <= 0) { SFX.step("wolf", e.x); e.stepT = 0.20; }
         } else if (e.state === "dying" && e.anim > 0.5) { e.state = "gone"; }
       });
       enemies = enemies.filter(function (e) { return e.state !== "gone"; });
@@ -585,8 +610,8 @@
         ctx.drawImage(im, cx - w1 / 2, e.win.y + e.win.h + 2 - h1, w1, h1);
         ctx.restore();
       } else {
-        var h2 = 74, w2 = h2 * ar;
-        ctx.drawImage(im, cx - w2 / 2, e.win.y + e.win.h + 6 - h2, w2, h2);
+        var h2 = 104, w2 = h2 * ar;
+        ctx.drawImage(im, cx - w2 / 2, e.win.y + e.win.h + 4 - h2, w2, h2);
       }
     } else if (e.type === "runner") {
       var h3 = 58, w3 = h3 * ar;
@@ -599,7 +624,7 @@
       var h4 = 44, w4 = h4 * ar;
       ctx.save();
       if (e.dir === -1) { ctx.translate(cx, 0); ctx.scale(-1, 1); ctx.translate(-cx, 0); }
-      ctx.drawImage(im, cx - w4 / 2, body.y + body.h - h4 + 8, w4, h4);
+      ctx.drawImage(im, cx - w4 / 2, body.y + body.h - h4, w4, h4);
       ctx.restore();
     }
   }
@@ -608,7 +633,7 @@
     if (!body) return;
     var dieR = e.state === "dying" ? Math.min(1, e.anim / 0.5) : 0;
     ctx.save();
-    if (e.type === "peek") {
+    if (e.type === "peek" && !e.boss) {
       ctx.beginPath(); ctx.rect(e.win.x - 2, e.win.y - 2, e.win.w + 4, e.win.h + 4); ctx.clip();
     }
     ctx.translate(body.x + body.w / 2, body.y + body.h);
