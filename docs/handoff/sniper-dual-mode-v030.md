@@ -2,7 +2,7 @@
 
 - last_updated: 2026-11-03 02:0311
 - status: active
-- version: v0.4.5
+- version: v0.4.6
 
 ## 任务目标
 
@@ -10,7 +10,15 @@
 
 ## 当前状态
 
-v0.4.5 已完成部署国内站并线上冒烟通过（commit 032743d）；下方保留历史记录。
+v0.4.6 已完成部署国内站并线上冒烟通过（commit 82fb743）；下方保留历史记录。
+
+### 2026-11-03 v0.4.6 改名 + 折叠 + 横屏（用户拍板三项全做）
+
+- **改名「鹰眼狙击」**：title/brand/菜单 h2/manifest（name+short_name）全改，副标题"屋顶狙击 · 双模式打靶竞技"；meta description 同步。
+- **玩法说明折叠**：页面底部 .tips 与菜单内规则列表都改 <details> 默认收起，summary 自定义 ▶ 箭头（open 时旋转 90°）。用户同步拍板：**所有子程序统一折叠**，已登记 docs/ideas/2026-11-03-全部子程序-玩法说明默认折叠.md（已进计划）。
+- **横屏方案 A**：竖屏小屏（portrait+≤820px）画布上方显示橙色"↻ 横屏体验更佳"提示条（可 ✕ 关闭，sessionStorage 记住）；横屏小高（landscape+≤520px）进入紧凑满屏：HUD 压缩成单行、画布 height:calc(100dvh-96px) 居中、隐藏 tips/footer/disclaimer、panel 限高可滚动。
+- **踩坑**：提示条最初 absolute 放画布内部 z-index 5，被菜单 overlay(z-10) 拦截点不到关闭——Playwright 30s 超时抓到，改为 stage-wrap 上方独立横条（不覆盖画布）后解决。
+- E2E：竖屏（390×844）提示条显示/可关闭、两个 details 默认收起；横屏（844×390）提示条隐藏、tips 隐藏、画布 294px 满屏、开局可玩；0 报错。线上 v0.4.6 / dbsniper-v18 / game.js?v=17 / style.css?v=7 确认。
 
 ### 2026-11-03 v0.4.5 声音客观排查结论 + 叫声强化 + 音效试听
 
