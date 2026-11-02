@@ -1,7 +1,7 @@
 /* 屋顶狙击 v0.4.1 —— 双模式（黄昏狙击 / 正午机枪）+ 蒙面匪 & 灰狼（关卡结构预留方案 C 任务制） */
 (function () {
   "use strict";
-  var APP_VERSION = "v0.4.4";
+  var APP_VERSION = "v0.4.5";
   var SAVE_KEY = "dbsniper-save-v2";
   var $ = function (id) { return document.getElementById(id); };
   var W = 900, H = 560; // 逻辑分辨率
@@ -123,8 +123,8 @@
     o.connect(g); g.connect(a.destination); o.start(); o.stop(a.currentTime + dur);
   }
   var SFX = {
-    shot: function () { noiseBurst(0.28, 1200, 0.95); tone(320, 70, 0.22, "square", 0.4); tone(180, 50, 0.3, "triangle", 0.35); },
-    mgShot: function () { noiseBurst(0.1, 1600, 0.6); tone(420, 160, 0.07, "square", 0.28); tone(160, 90, 0.09, "triangle", 0.2); },
+    shot: function () { noiseBurst(0.2, 1200, 0.7); tone(320, 70, 0.18, "square", 0.3); tone(180, 50, 0.24, "triangle", 0.26); },
+    mgShot: function () { noiseBurst(0.09, 1600, 0.42); tone(420, 160, 0.06, "square", 0.2); tone(160, 90, 0.08, "triangle", 0.15); },
     head: function () { tone(880, 1500, 0.22, "sine", 0.38); noiseBurst(0.1, 2600, 0.32); },
     body: function () { tone(360, 120, 0.16, "square", 0.4); tone(160, 90, 0.16, "triangle", 0.3); },
     step: function (kind, x) {
@@ -136,28 +136,37 @@
       if (part === "head") this.head(); else this.body();
       setTimeout(function () {
         if (e.type === "flyer") {
-          // 鸟惊叫：两声急促下鸣 + 扑翅噪声
-          cry(2300, 1000, 0.13, "sine", 0.5, 30, 120);
-          setTimeout(function () { cry(1900, 750, 0.11, "sine", 0.4, 28, 90); }, 90);
-          noiseBurst(0.09, 3400, 0.22);
+          // 鸟惊叫：三声急促下鸣，更长更响
+          cry(2400, 950, 0.2, "sine", 0.7, 34, 160);
+          setTimeout(function () { cry(2000, 700, 0.18, "sine", 0.6, 30, 120); }, 110);
+          setTimeout(function () { cry(1700, 550, 0.16, "sine", 0.5, 28, 100); }, 230);
+          noiseBurst(0.14, 3600, 0.3);
         } else if (e.type === "wolf") {
-          // 狼哀嚎：呜咽下滑
-          cry(620, 170, 0.34, "sawtooth", 0.42, 18, 55);
-          cry(1250, 480, 0.22, "sine", 0.22);
-          noiseBurst(0.1, 1100, 0.2);
+          // 狼哀嚎：拖长呜咽
+          cry(700, 150, 0.55, "sawtooth", 0.65, 20, 70);
+          cry(1400, 420, 0.4, "sine", 0.32);
+          cry(950, 300, 0.45, "triangle", 0.3, 16, 40);
+          noiseBurst(0.16, 1200, 0.28);
         } else if (e.boss) {
-          // 金链老大：低沉闷哼 + 重物倒地
-          cry(210, 62, 0.4, "square", 0.45, 12, 16);
-          noiseBurst(0.14, 620, 0.3);
-          setTimeout(function () { noiseBurst(0.18, 380, 0.35); }, 130);
+          // 金链老大：重闷哼 + 倒地双响
+          cry(230, 55, 0.55, "square", 0.7, 12, 20);
+          cry(160, 40, 0.5, "sawtooth", 0.5);
+          noiseBurst(0.2, 700, 0.42);
+          setTimeout(function () { noiseBurst(0.3, 380, 0.55); tone(90, 40, 0.3, "sine", 0.5); }, 180);
         } else {
-          // 土匪惨叫：啊——（爆头更尖）
+          // 土匪惨叫：长一声"啊——"，爆头更尖更惨
           var hi = part === "head";
-          cry(hi ? 820 : 680, hi ? 300 : 230, 0.38, "sawtooth", 0.46, 22, 45);
-          cry(1200, 420, 0.3, "triangle", 0.2);
-          noiseBurst(0.12, 1900, 0.2);
+          cry(hi ? 900 : 760, hi ? 260 : 200, 0.6, "sawtooth", 0.72, 24, 60);
+          cry(hi ? 1500 : 1200, hi ? 480 : 380, 0.5, "triangle", 0.35, 18, 50);
+          noiseBurst(0.16, 2000, 0.28);
         }
-      }, 60);
+      }, 90);
+    },
+    demo: function (k) {
+      var fake = { type: k, boss: k === "boss" };
+      if (k === "shot") return this.shot();
+      if (k === "mgshot") return this.mgShot();
+      this.hitFor(fake, k === "boss" ? "body" : "body");
     },
     miss: function () { noiseBurst(0.06, 3000, 0.08); },
     empty: function () { tone(900, 700, 0.05, "square", 0.08); },
@@ -1055,6 +1064,9 @@
     });
     if (save.muted) $("btn-mute").textContent = "🔇";
     $("lock-close").addEventListener("click", function () { $("time-lock").classList.add("hidden"); showMenu(); });
+    Array.prototype.forEach.call(document.querySelectorAll(".sfx-btn"), function (btn) {
+      btn.addEventListener("click", function () { ensureAudio(); SFX.demo(btn.getAttribute("data-sfx")); });
+    });
     buildCity();
     showMenu();
     applyHudMode();
