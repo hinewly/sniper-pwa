@@ -1,8 +1,8 @@
 # 屋顶狙击 v0.3.0 双模式改版 交接
 
-- last_updated: 2026-11-02 12:30
+- last_updated: 2026-11-03 01:11
 - status: active
-- version: v0.4.0
+- version: v0.4.2
 
 ## 任务目标
 
@@ -10,7 +10,14 @@
 
 ## 当前状态
 
-v0.4.0 已完成部署国内站并线上冒烟通过；下方保留 v0.3.x 过程记录。
+v0.4.2 已完成部署国内站并线上冒烟通过（commit 3206e0a）；下方保留历史记录。
+
+### 2026-11-03 v0.4.2 已上线（用户反馈三连修）
+
+- **关卡解锁改过关制**：gameOver 不再提升 maxLevel（失败只重试当前关）；unlockedLevel() = 已通最高关 + 1；菜单文案改「已通第 X 关」。旧存档里被失败误解锁的关卡无法回溯区分，保持现状不强制回收。
+- **Mac 无声修复**：新增 ensureAudio()（pointerdown/touchstart/keydown 全局捕获兜底 + resume().catch），模式按钮/canvas 按下统一走 ensureAudio；静音按钮切换后有即时反馈提示（若之前误存了 muted=true，点一下 🔇 按钮即可恢复）。
+- **机枪图标换真实重机枪**：Wikimedia 公有领域 M2 Browning 实照（upload 图床 429，改走 commons thumb.php 通道下载），裁剪提亮 256px → public/assets/mg-icon.png，菜单按钮圆形徽章样式；style.css v4 / game.js v13 / SW dbsniper-v14。
+- E2E：新档仅第 1 关可选；失败后 maxLevel=0 不解锁；第 1 关过关后解锁第 2 关；mg-icon 加载成功；线上（https://sniper.daobox.net.cn）冒烟同全过，页面报错 0。
 
 ### 2026-11-02 用户验收反馈（待确认方案后改）
 
