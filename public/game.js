@@ -1,7 +1,7 @@
 /* 屋顶狙击 v0.4.1 —— 双模式（黄昏狙击 / 正午机枪）+ 蒙面匪 & 灰狼（关卡结构预留方案 C 任务制） */
 (function () {
   "use strict";
-  var APP_VERSION = "v0.4.1";
+  var APP_VERSION = "v0.4.2";
   var SAVE_KEY = "dbsniper-save-v2";
   var $ = function (id) { return document.getElementById(id); };
   var W = 900, H = 560; // 逻辑分辨率
@@ -73,6 +73,16 @@
   /* ---------- 音效（WebAudio 合成，零素材） ---------- */
   var AC = null;
   function ac() { if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } return AC; }
+  // macOS Safari/Chrome 自动播放策略更严：任何用户手势都尝试解锁音频，resume 失败静默兜底
+  function ensureAudio() {
+    var a = ac();
+    if (a && a.state === "suspended") {
+      try { a.resume().catch(function () {}); } catch (e) {}
+    }
+  }
+  ["pointerdown", "touchstart", "keydown"].forEach(function (evt) {
+    window.addEventListener(evt, ensureAudio, { capture: true, passive: true });
+  });
   function noiseBurst(dur, freq, gain, pan) {
     var a = ac(); if (!a || save.muted) return;
     var len = a.sampleRate * dur, buf = a.createBuffer(1, len, a.sampleRate), d = buf.getChannelData(0);
@@ -833,7 +843,8 @@
   function hideModals() { ["menu", "clear-modal", "over-modal"].forEach(function (id) { $(id).classList.add("hidden"); }); }
   function bestOf() { return mode === "sniper" ? save.bestSniper : save.bestMg; }
   function unlockedLevel() {
-    return Math.min(MAX_LEVEL, Math.max(1, save.maxLevel || 1));
+    // maxLevel = 已通关的最远关卡；失败不解锁，只有过关才开下一关
+    return Math.min(MAX_LEVEL, (save.maxLevel || 0) + 1);
   }
   function renderLevelChips() {
     var unlocked = unlockedLevel();
@@ -860,7 +871,7 @@
     $("menu").classList.remove("hidden");
     $("menu-best").textContent =
       "🎯 狙击最高 " + (save.bestSniper || 0) + " · 🔫 机枪最高 " + (save.bestMg || 0) +
-      (save.maxLevel ? " · 最远第 " + unlockedLevel() + " 关" : " · 首次出击，祝好运！");
+      (save.maxLevel ? " · 已通第 " + save.maxLevel + " 关" : " · 首次出击，祝好运！");
   }
   function setClearReward(cls, text) {
     var el = $("clear-reward");
@@ -917,7 +928,6 @@
   function gameOver() {
     state = "gameover"; SFX.over();
     if (score > bestOf()) { if (mode === "sniper") save.bestSniper = score; else save.bestMg = score; }
-    if (level > save.maxLevel) save.maxLevel = level;
     persist();
     $("over-info").textContent = "第 " + level + " 关 · 得分 " + score + " · " +
       (mode === "sniper" ? "狙击" : "机枪") + "最高分 " + bestOf();
@@ -936,8 +946,8 @@
     });
     canvas.addEventListener("pointerdown", function (ev) {
       ev.preventDefault();
+      ensureAudio();
       var p = toLogical(ev);
-      if (ac() && ac().state === "suspended") ac().resume();
       if (state !== "playing") return;
       if (mode === "sniper") {
         var c = reticle();
@@ -985,7 +995,7 @@
       btn.addEventListener("mouseenter", function () { if (state === "menu") previewMode = m; });
       btn.addEventListener("mouseleave", function () { if (state === "menu") previewMode = null; });
       btn.addEventListener("click", function () {
-        if (ac() && ac().state === "suspended") ac().resume();
+        ensureAudio();
         setMode(m);
         startLevel(selectedLevel, true);
       });
@@ -1000,7 +1010,14 @@
     $("btn-pause").addEventListener("click", togglePause);
     $("btn-resume").addEventListener("click", togglePause);
     $("btn-quit").addEventListener("click", function () { paused = false; firing = false; $("btn-pause").textContent = "⏸"; $("pause-modal").classList.add("hidden"); showMenu(); applyHudMode(); updateHud(); });
-    $("btn-mute").addEventListener("click", function () { save.muted = !save.muted; persist(); $("btn-mute").textContent = save.muted ? "🔇" : "🔊"; });
+    $("btn-mute").addEventListener("click", function () {
+      save.muted = !save.muted; persist();
+      $("btn-mute").textContent = save.muted ? "🔇" : "🔊";
+      if (!save.muted) ensureAudio();
+      var hud = $("hud-level"), tip = save.muted ? "🔇 音效已关闭" : "🔊 音效已开启";
+      if (hud && state !== "playing") { hud.textContent = tip; }
+      $("btn-mute").title = tip;
+    });
     if (save.muted) $("btn-mute").textContent = "🔇";
     $("lock-close").addEventListener("click", function () { $("time-lock").classList.add("hidden"); showMenu(); });
     buildCity();
@@ -1022,6 +1039,7 @@
     score: function () { return score; },
     startLevel: startLevel,
     levelClear: levelClear,
+    gameOver: gameOver,
     setMode: setMode
   };
 

@@ -1,7 +1,7 @@
 /* 屋顶狙击 SW v12 */
-const CACHE = "dbsniper-v13";
+const CACHE = "dbsniper-v14";
 const ASSETS = [
-  "./", "./index.html", "./style.css?v=3", "./game.js?v=12",
+  "./", "./index.html", "./style.css?v=4", "./game.js?v=13", "assets/mg-icon.png",
   "./manifest.json", "./icons/favicon.svg",
   "./assets/sniper.png", "./assets/mg.png", "./assets/bandit-red.png",
   "./assets/bandit-blue.png", "./assets/wolf.png", "./assets/boss.png",
