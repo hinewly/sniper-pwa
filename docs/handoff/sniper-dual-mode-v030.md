@@ -1,81 +1,58 @@
-# 屋顶狙击 v0.3.0 双模式改版 交接
+# 屋顶狙击 v0.4.0 固定10关/选关/首通积分 交接
 
-- last_updated: 2026-11-02 10:55
-- status: active
-- version: v0.3.0
+- last_updated: 2026-11-02 10:58
+- status: done
+- version: v0.4.0
 
 ## 任务目标
 
-用户拍板的三件事：①双模式（开局选狙击/机枪，方案 A）②场景随模式切换（狙击=黄昏金时刻，机枪=正午大晴天，解决页面沉闷）③新角色阵容（蒙面匪 ×3 + 灰狼）。
+把主流程收敛为固定 10 关；支持从已解锁关开始；每关每模式首通发 DaoBox 统一积分；手机端保持轻量排版。
 
 ## 当前状态
 
-用户反馈：角色要用 Vidu AI 生成（复用钓鱼橙鲤鱼管线），不要代码手绘。已用 chrome-vidu-profile CDP（9333）在 Vidu 文生图片/参考生图生成：
-- ✅ 1号狙击手趴姿（文生图片，6 积分）
-- ✅ 2号机枪手趴姿（参考生图，用1号当参考，6 积分；踩坑：参考生图提示词是 tiptap 富文本编辑器不是 textarea，须点 .tiptap.ProseMirror 键入；首次误提交空提示词 0 积分出废图）
-- ✅ 用户确认后继续：红头巾匪/蓝头巾匪/灰狼/金链老大 4 张全部生成（各 6 积分，剩 ~742）
-- ✅ 抠图（cv2 边缘洪泛法，保留角色+道具多连通域）→ public/assets/*.png 共 6 张
-- ✅ 接入 game.js：SPRITES 预加载，drawPlayer/drawEnemy 贴图优先、代码绘制兜底，碰撞判定框全部未动；跑动/死亡翻倒动画沿用代码
-- ✅ v0.3.1（game.js?v=9 + SW dbsniper-v10）本地 E2E + 线上冒烟全过，无页面报错
-- ✅ 已部署 https://sniper.daobox.net.cn（commit 21d105a 已 push；线上 6 张贴图全 200）
-- 待用户早上验收：画风、人物形象、贴图大小/位置手感
-
-✅ v0.3.0 已上线 https://sniper.daobox.net.cn（commit bc846d8 已 push；rsync 整项目 → /opt/sniper-pwa，线上 index/game.js?v=8/SW dbsniper-v9 全 200，线上冒烟 E2E 通过无报错）。待用户看截图反馈 + 手机实测。
+已完成并部署国内站 `https://sniper.daobox.net.cn`。
 
 ## 最近完成
 
-- 双模式框架：`mode` 变量（sniper/mg）+ 菜单双按钮（悬停=场景实时预览，点击=开局），存档 v2 分开记 `bestSniper`/`bestMg`（自动迁移 v1 存档）
-- 狙击模式：保留镜圈+呼吸晃动+5 发弹匣，正中 250/击中 100
-- 机枪模式：按住连发（130ms/发）、弹道散布随枪管发热增大、过热 100% 强制冷却 1.6s、单发 40/正中 70、HUD「枪管」热度条、装弹按钮隐藏
-- 场景双配色 PALETTES：黄昏（暖橙天+大太阳+亮窗） / 正午（蓝天白云+米色楼+白窗），楼色存索引渲染时查表，菜单预览零开销切换
-- 新角色：红头巾蒙面匪（探头）、蓝头巾蒙面匪（奔跑+小布包）、金链老大（稀有 15%、探头时间 -30%、300/500 分）、灰狼（第 2 关起，S 形走位、速度快、机枪模式刷新率更高）；小鸟保留
-- 玩家趴姿两套装备：狙击枪 / 轻机枪+两脚架+弹链盒+枪口火光
-- 全局提亮：页面 theme 换暖色奶油底（style.css 重写）、HUD/弹窗浅色化、瞄准镜外暗圈改暖棕半透明（alpha .72→.42）
-- 修复暗圈渲染 bug：旧 path `rect+arc(0,7,true)` 产生斜亮带伪影（提亮后暴露），改 `moveTo+arc(2π)` evenodd
-- E2E 全过：菜单预览/双模式开局/狙击命中计分/机枪连发计分/暂停回菜单，无页面错误
+- 固定第 1-10 关；第 5 关起明显加压，第 10 关高压但可通关（23 目标 / 42 秒 / 1000ms 停留）。
+- 主菜单「起始关卡」胶囊：第 N 关通过后解锁；手机只显示已解锁，iPad/桌面显示 1-10 并置灰未解锁。
+- 从选中关开局得分归零；失败后“再来一次”从当前关重试；第 10 关完成后显示“全部通关”和“再战第 10 关”。
+- 首通积分表：第 1-10 关 = 10/20/50/80/100/200/300/400/500/700；狙击/机枪分开；服务端每关每模式只发一次。
+- daobox-home 新增 `POST /api/reward/game/clear` 与 `reward_game_clears` 表；入 `reward_points` / `reward_ledger`，不直接改会员到期日。
+- 游客过关提示“登录后可领”；登录用户过关自动入账。
+- 手机端内容做减法：次要规则折叠、弹窗限高滚动、按钮全宽、起始关 5 列网格。
+- 版本联动：v0.4.0 + style.css?v=3 + game.js?v=11 + SW dbsniper-v12。
 
-## 用户反馈修复（v0.3.2，2026-11-02）
+## 验证
 
-- 枪声听不到/太小：WebAudio 原枪声低频为主（手机扬声器几乎不可闻）→ 加重音量 + 提高中高频（noise 0.95 / square 谐波层），MG/命中音效同步加强
-- 狙击模式窗口里的人只剩下半张脸：红头巾匪贴图 68px 高但被 40px 窗口矩形裁剪 + 爆头判定点在窗口上沿外的不可见区 → 贴图完整缩放进窗口（win.h+4）、判定框改与可见区域一致（hx=e.x, hy=win.y+8, hr=12）；老大本来无裁剪未动
-- E2E 回归全过（爆头 250/机枪 70 正常），已部署 v0.3.2（game.js?v=10 + SW dbsniper-v11），线上验证无报错
-
-## 待办
-
-- [x] push + rsync 部署国内站 + 线上验证（2026-11-02 完成，线上冒烟 E2E 通过）
-- [ ] 手机实测：机枪模式按住扫射的触屏手感
-- [ ] 平衡性调参（依用户反馈）：MG_RATE/HEAT_SHOT/灰狼出现率/老大分值
-- [ ] 二期方案 C 任务制关卡（mission 字段已预留）
+- `node -c` / `node --check` 全过。
+- 本地 Playwright：393px 菜单/过关提示、1024px 解锁/第10关终局全过；页面错误 0。
+- daobox-home 本地 Wrangler API：未登录 401；首通 +10；重复过关 already:true；非法 level 400。
+- 国内 rsync + 重启成功；线上未登录 `/api/reward/game/clear` 返回 401。
+- 海外 Cloudflare 同步部署 Version `dc39fb90-dfaa-4696-886a-484416fa30da`。
+- 线上冒烟：v0.4.0 / SW dbsniper-v12 / game.js?v=11 全 200；手机第 1 关过关 +10 积分提示正常；页面错误 0。
 
 ## 重要决策
 
-- 2026-11-02 用户拍板：方案 A（开局选模式）；场景跟模式走（狙击=黄昏、机枪=正午）——提亮不是调一个画面，而是两张场景
-- 继续全程序化 canvas 绘制零素材；Vidu 提示词留给后续宣传视频用
-- 合规口径更新：页面文案从「目标全是小动物」改为「卡通竞技风格，无血腥内容」
+- 本期只发积分，不做“玩法直接换天数”。
+- 继续沿用账号中心现有 100 积分 = 1 天、每月最多 7 天的兑换规则。
+- 钓鱼积分下调（100 斤 = 10 积分）列入下一版全局积分平衡，不与本次混改。
+
+## 待办
+
+- 下一版：全局积分平衡，钓鱼 `100 斤 = 1 天 + 10 积分`。
+- 用户手机实测：选关、机枪扫射手感、第 6-10 关难度。
+- 二期：任务制关卡（mission 字段保留）、挑战/无尽模式、积分兑换商城。
 
 ## 注意事项
 
-- 菜单按钮 hover 曾因「悬停切换规则列表→面板高度变化→按钮位移」导致点击落空，已改为悬停只预览场景、规则合并为一份固定列表——勿恢复悬停切规则
-- 存档 key 升为 dbsniper-save-v2，读旧 v1 的 best 迁移到 bestSniper
-- game.js?v=8 + style.css?v=2 + SW dbsniper-v9，改任一文件必须同步升 index.html 引用与 SW
-- 机枪散布公式 `4 + heat*0.16`，过热时 aim 不动也会飘；E2E 钩子新增 mode/setMode
+- 首通积分以后端 `reward_game_clears` 判重为准，不要在前端做唯一判重。
+- `reward_game_clears` 主键是 `(user_id, app, mode, level)`；以后接其他游戏时先在 `GAME_CLEAR_POINTS` 增加配置。
+- 改 game.js/style.css/SW 必须同步版本参数；当前为 game.js?v=11 / style.css?v=3 / dbsniper-v12。
 
 ## 相关文件
 
-- public/game.js（重写核心）、index.html（菜单/HUD/文案）、style.css（暖色主题重写）、service-worker.js（v9）、manifest.json（theme 色）
-- 截图：_temp-screenshots/2026-11/狙击v0.3.0-*.png（README 已登记）
-
-## 部署踩坑记录
-
-- 部署目标 = 整个项目目录（public/ + server/）→ /opt/sniper-pwa/，node-server 从脚本上级的 public/ 提供服务；曾误用「rsync public/ 到 /opt/sniper-pwa/ 且 --delete」把线上 public/ 删掉造成短暂 404，已修复并验证。正确命令：rsync 整项目（排除 .git/docs/node_modules）到 /opt/sniper-pwa/
-
-## v0.4.0 固定10关 + 选关 + 首通积分（2026-11-02）
-
-- 固定主流程 **10 关**：原 5 关保留，新增 6-10 关；第 5 关起明显加压，第 10 关高压但可通关（quota 23 / 42s / showTime 1000ms）。
-- 主菜单新增「起始关卡」：第 N 关通过后解锁；手机只显示已解锁，桌面显示 1-10 且未解锁置灰；从选中关开局得分归零；失败后“再来一次”从当前关重试。
-- 新增每关每模式首通积分：10/20/50/80/100/200/300/400/500/700；服务端判重，入 DaoBox 统一积分池，不直接送会员天数。
-- daobox-home 新增 `POST /api/reward/game/clear` + `reward_game_clears` 表；游客过关只提示登录后可领；登录用户过关自动入账。
-- 手机端内容做减法：规则次要项折叠，弹窗限高滚动，按钮全宽，起始关 5 列网格；iPad/桌面显示完整信息。
-- 本地验证：`node -c` 通过；Playwright 393px 菜单/过关提示与 1024px 解锁/第10关终局全过；页面错误 0（401 为 mock /api/me 的预期资源日志）。
-- daobox-home API 本地 Wrangler 自检通过：未登录 401、首通 +10、重复 already:true、非法 level 400。
-- 版本联动：v0.4.0 + style.css?v=3 + game.js?v=11 + SW dbsniper-v12。
+- `public/game.js`、`public/index.html`、`public/style.css`、`public/service-worker.js`
+- `/Users/zoujiean/CodeX/daobox-home/worker/src/index.js`
+- `/Users/zoujiean/CodeX/daobox-home/docs/handoff/game-clear-reward-api.md`
+- 截图：`/Users/zoujiean/CodeX/_temp-screenshots/2026-11/狙击v0.4.0-*.png`
