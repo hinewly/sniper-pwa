@@ -1,7 +1,7 @@
 /* 屋顶狙击 v0.4.1 —— 双模式（黄昏狙击 / 正午机枪）+ 蒙面匪 & 灰狼（关卡结构预留方案 C 任务制） */
 (function () {
   "use strict";
-  var APP_VERSION = "v0.4.5";
+  var APP_VERSION = "v0.4.6";
   var SAVE_KEY = "dbsniper-save-v2";
   var $ = function (id) { return document.getElementById(id); };
   var W = 900, H = 560; // 逻辑分辨率
@@ -1064,6 +1064,13 @@
     });
     if (save.muted) $("btn-mute").textContent = "🔇";
     $("lock-close").addEventListener("click", function () { $("time-lock").classList.add("hidden"); showMenu(); });
+    var rh = $("rotate-hint");
+    if (rh && sessionStorage.getItem("dbsniper-rotate-hint") === "off") rh.hidden = true;
+    var rhClose = $("rotate-hint-close");
+    if (rhClose) rhClose.addEventListener("click", function () {
+      rh.hidden = true;
+      try { sessionStorage.setItem("dbsniper-rotate-hint", "off"); } catch (e) {}
+    });
     Array.prototype.forEach.call(document.querySelectorAll(".sfx-btn"), function (btn) {
       btn.addEventListener("click", function () { ensureAudio(); SFX.demo(btn.getAttribute("data-sfx")); });
     });
