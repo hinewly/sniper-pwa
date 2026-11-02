@@ -1,34 +1,27 @@
-/* 屋顶狙击 v0.3.0 —— 双模式（黄昏狙击 / 正午机枪）+ 蒙面匪 & 灰狼（关卡结构预留方案 C 任务制） */
+/* 屋顶狙击 v0.4.0 —— 双模式（黄昏狙击 / 正午机枪）+ 蒙面匪 & 灰狼（关卡结构预留方案 C 任务制） */
 (function () {
   "use strict";
-  var APP_VERSION = "v0.3.2";
+  var APP_VERSION = "v0.4.0";
   var SAVE_KEY = "dbsniper-save-v2";
   var $ = function (id) { return document.getElementById(id); };
   var W = 900, H = 560; // 逻辑分辨率
 
-  /* ---------- 关卡表（预留任务字段 mission，方案 C 用） ---------- */
+  /* ---------- 关卡表（固定 10 关：5 关后明显加压，但保留可通关路线） ---------- */
   var BASE_LEVELS = [
-    { quota: 5,  time: 60, spawnGap: 2000, showTime: 2600, runners: 0, flyers: 0, sway: 0.4, mission: null },
+    { quota: 5,  time: 60, spawnGap: 2000, showTime: 2600, runners: 0, flyers: 0, sway: 0.40, mission: null },
     { quota: 7,  time: 55, spawnGap: 1700, showTime: 2300, runners: 1, flyers: 1, sway: 0.55, mission: null },
-    { quota: 9,  time: 55, spawnGap: 1500, showTime: 2000, runners: 2, flyers: 1, sway: 0.7, mission: null },
+    { quota: 9,  time: 55, spawnGap: 1500, showTime: 2000, runners: 2, flyers: 1, sway: 0.70, mission: null },
     { quota: 11, time: 50, spawnGap: 1300, showTime: 1800, runners: 2, flyers: 2, sway: 0.85, mission: null },
-    { quota: 13, time: 50, spawnGap: 1100, showTime: 1600, runners: 3, flyers: 2, sway: 1.0, mission: null }
+    { quota: 13, time: 50, spawnGap: 1100, showTime: 1600, runners: 3, flyers: 2, sway: 1.00, mission: null },
+    { quota: 15, time: 48, spawnGap: 980,  showTime: 1450, runners: 3, flyers: 2, sway: 1.15, mission: null },
+    { quota: 17, time: 46, spawnGap: 880,  showTime: 1300, runners: 3, flyers: 2, sway: 1.30, mission: null },
+    { quota: 19, time: 44, spawnGap: 790,  showTime: 1180, runners: 4, flyers: 2, sway: 1.45, mission: null },
+    { quota: 21, time: 42, spawnGap: 720,  showTime: 1080, runners: 4, flyers: 3, sway: 1.60, mission: null },
+    { quota: 23, time: 42, spawnGap: 680,  showTime: 1000, runners: 4, flyers: 3, sway: 1.70, mission: null }
   ];
-  function levelOf(n) {
-    if (n <= BASE_LEVELS.length) return BASE_LEVELS[n - 1];
-    var b = BASE_LEVELS[BASE_LEVELS.length - 1];
-    var k = n - BASE_LEVELS.length;
-    return {
-      quota: b.quota + 2 * k,
-      time: 50,
-      spawnGap: Math.max(700, b.spawnGap * Math.pow(0.92, k)),
-      showTime: Math.max(900, b.showTime * Math.pow(0.92, k)),
-      runners: Math.min(4, b.runners + k),
-      flyers: Math.min(3, b.flyers + k),
-      sway: Math.min(1.6, b.sway + 0.15 * k),
-      mission: null
-    };
-  }
+  var LEVEL_REWARDS = { 1: 10, 2: 20, 3: 50, 4: 80, 5: 100, 6: 200, 7: 300, 8: 400, 9: 500, 10: 700 };
+  var MAX_LEVEL = BASE_LEVELS.length;
+  var selectedLevel = 1;
   var MAG = 5, RELOAD_MS = 1800;
   /* 机枪参数 */
   var MG_RATE = 130, HEAT_SHOT = 7, COOL_RATE = 34, OVERHEAT_LOCK = 1600, MG_HEAD = 70, MG_BODY = 40;
@@ -155,11 +148,12 @@
   function paletteMode() { return (state === "menu" && previewMode) ? previewMode : mode; }
   function pal() { return PALETTES[paletteMode()]; }
 
-  function startLevel(n) {
+  function startLevel(n, resetScore) {
+    if (!(n >= 1 && n <= MAX_LEVEL)) n = 1;
     level = n;
-    cfg = levelOf(n);
+    cfg = BASE_LEVELS[n - 1];
     if (mode === "mg") cfg = Object.assign({}, cfg, { runners: Math.min(6, cfg.runners + 2) });
-    score = level === 1 ? 0 : score;
+    if (resetScore !== false) score = 0;
     combo = 0; kills = 0; timeLeft = cfg.time;
     if (mode === "sniper") { mag = MAG; reloading = 0; }
     else { heat = 0; overheatLeft = 0; mgCd = 0; firing = false; }
@@ -813,19 +807,85 @@
   function log(msg) { $("hud-level").textContent = msg; }
   function hideModals() { ["menu", "clear-modal", "over-modal"].forEach(function (id) { $(id).classList.add("hidden"); }); }
   function bestOf() { return mode === "sniper" ? save.bestSniper : save.bestMg; }
+  function unlockedLevel() {
+    return Math.min(MAX_LEVEL, Math.max(1, save.maxLevel || 1));
+  }
+  function renderLevelChips() {
+    var unlocked = unlockedLevel();
+    if (selectedLevel > unlocked) selectedLevel = 1;
+    var wrap = $("level-chips");
+    wrap.innerHTML = "";
+    for (var i = 1; i <= MAX_LEVEL; i++) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "level-chip" + (i === selectedLevel ? " active" : "");
+      b.textContent = i;
+      b.disabled = i > unlocked;
+      b.title = i > unlocked ? "通过第 " + (i - 1) + " 关后解锁" : "从第 " + i + " 关开始";
+      b.addEventListener("click", function (ev) {
+        var n = Number(ev.currentTarget.textContent);
+        if (n <= unlockedLevel()) { selectedLevel = n; renderLevelChips(); }
+      });
+      wrap.appendChild(b);
+    }
+  }
   function showMenu() {
     state = "menu"; previewMode = null;
+    renderLevelChips();
     $("menu").classList.remove("hidden");
     $("menu-best").textContent =
       "🎯 狙击最高 " + (save.bestSniper || 0) + " · 🔫 机枪最高 " + (save.bestMg || 0) +
-      (save.maxLevel ? " · 最远第 " + save.maxLevel + " 关" : " · 首次出击，祝好运！");
+      (save.maxLevel ? " · 最远第 " + unlockedLevel() + " 关" : " · 首次出击，祝好运！");
+  }
+  function setClearReward(cls, text) {
+    var el = $("clear-reward");
+    el.className = "reward-box" + (cls ? " " + cls : "");
+    el.textContent = text;
+  }
+  function claimLevelReward() {
+    var n = LEVEL_REWARDS[level] || 0;
+    if (!n) return;
+    var loggedIn = !!(window.DaoBox && DaoBox.user);
+    if (!loggedIn) {
+      var loginUrl = (window.DaoBox && DaoBox.loginUrl) ? DaoBox.loginUrl()
+        : (window.DB_HOME || "https://daobox.app") + "/login?src=sniper&redirect=" + encodeURIComponent(location.href);
+      setClearReward("guest", "");
+      var el = $("clear-reward");
+      el.innerHTML = "🎖 首通奖励 +" + n + " 积分 · <a href=\"" + loginUrl + "\" style=\"color:#b05c22;font-weight:700\">登录后可领</a>";
+      return;
+    }
+    setClearReward("", "⭐ 积分奖励入账中…");
+    fetch((window.DB_HOME || "https://daobox.app") + "/api/reward/game/clear", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        app: "sniper", mode: mode, level: level, score: score,
+        requestId: "sniper-v1-" + mode + "-" + level
+      })
+    }).then(function (r) { return r.json().catch(function () { return {}; }); }).then(function (d) {
+      if (d && d.ok) {
+        setClearReward(d.gained > 0 ? "" : "guest",
+          d.gained > 0 ? "⭐ 首通奖励 +" + d.gained + " 积分已到账" : "⭐ 本关首通积分已领过");
+      } else {
+        setClearReward("error", "⭐ +" + n + " 积分奖励暂未到账，可稍后重试");
+      }
+    }).catch(function () {
+      setClearReward("error", "⭐ +" + n + " 积分奖励暂未到账，可稍后重试");
+    });
   }
   function levelClear() {
     state = "levelclear"; SFX.clear();
+    var firstRun = level > save.maxLevel;
     if (score > bestOf()) { if (mode === "sniper") save.bestSniper = score; else save.bestMg = score; }
     if (level > save.maxLevel) save.maxLevel = level;
     persist();
-    $("clear-info").textContent = "第 " + level + " 关完成！得分 " + score + "（最高 " + bestOf() + "）";
+    var final = level >= MAX_LEVEL;
+    $("clear-info").textContent = (final ? "🎉 全部通关！第 10 关完成！" : "第 " + level + " 关完成！") +
+      " 得分 " + score + "（最高 " + bestOf() + "）";
+    $("btn-next").textContent = final ? "再战第 10 关" : "下一关 →";
+    setClearReward("", "⭐ 积分奖励确认中…");
+    claimLevelReward();
     $("clear-modal").classList.remove("hidden");
     updateHud();
   }
@@ -902,14 +962,15 @@
       btn.addEventListener("click", function () {
         if (ac() && ac().state === "suspended") ac().resume();
         setMode(m);
-        startLevel(1);
+        startLevel(selectedLevel, true);
       });
     }
     hookModeBtn("btn-mode-sniper", "sniper");
     hookModeBtn("btn-mode-mg", "mg");
-    $("btn-next").addEventListener("click", function () { startLevel(level + 1); });
-    $("btn-retry").addEventListener("click", function () { score = 0; startLevel(1); });
+    $("btn-next").addEventListener("click", function () { startLevel(level >= MAX_LEVEL ? MAX_LEVEL : level + 1, true); });
+    $("btn-retry").addEventListener("click", function () { startLevel(level, true); });
     $("btn-menu").addEventListener("click", showMenu);
+    $("btn-clear-menu").addEventListener("click", showMenu);
     $("btn-reload").addEventListener("click", startReload);
     $("btn-pause").addEventListener("click", togglePause);
     $("btn-resume").addEventListener("click", togglePause);
@@ -935,6 +996,7 @@
     fire: fire,
     score: function () { return score; },
     startLevel: startLevel,
+    levelClear: levelClear,
     setMode: setMode
   };
 

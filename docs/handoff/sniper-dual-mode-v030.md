@@ -1,6 +1,6 @@
 # 屋顶狙击 v0.3.0 双模式改版 交接
 
-- last_updated: 2026-11-02 04:20
+- last_updated: 2026-11-02 10:55
 - status: active
 - version: v0.3.0
 
@@ -68,3 +68,14 @@
 ## 部署踩坑记录
 
 - 部署目标 = 整个项目目录（public/ + server/）→ /opt/sniper-pwa/，node-server 从脚本上级的 public/ 提供服务；曾误用「rsync public/ 到 /opt/sniper-pwa/ 且 --delete」把线上 public/ 删掉造成短暂 404，已修复并验证。正确命令：rsync 整项目（排除 .git/docs/node_modules）到 /opt/sniper-pwa/
+
+## v0.4.0 固定10关 + 选关 + 首通积分（2026-11-02）
+
+- 固定主流程 **10 关**：原 5 关保留，新增 6-10 关；第 5 关起明显加压，第 10 关高压但可通关（quota 23 / 42s / showTime 1000ms）。
+- 主菜单新增「起始关卡」：第 N 关通过后解锁；手机只显示已解锁，桌面显示 1-10 且未解锁置灰；从选中关开局得分归零；失败后“再来一次”从当前关重试。
+- 新增每关每模式首通积分：10/20/50/80/100/200/300/400/500/700；服务端判重，入 DaoBox 统一积分池，不直接送会员天数。
+- daobox-home 新增 `POST /api/reward/game/clear` + `reward_game_clears` 表；游客过关只提示登录后可领；登录用户过关自动入账。
+- 手机端内容做减法：规则次要项折叠，弹窗限高滚动，按钮全宽，起始关 5 列网格；iPad/桌面显示完整信息。
+- 本地验证：`node -c` 通过；Playwright 393px 菜单/过关提示与 1024px 解锁/第10关终局全过；页面错误 0（401 为 mock /api/me 的预期资源日志）。
+- daobox-home API 本地 Wrangler 自检通过：未登录 401、首通 +10、重复 already:true、非法 level 400。
+- 版本联动：v0.4.0 + style.css?v=3 + game.js?v=11 + SW dbsniper-v12。

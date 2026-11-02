@@ -46,3 +46,33 @@ body { font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; bac
 .footer a { color:#b05c22; text-decoration:none; }
 .footer .dot { color:var(--muted); margin:0 6px; }
 .disclaimer { text-align:center; color:#a08d70; font-size:12px; padding:6px 0 22px; }
+
+/* v0.4.0 选关 + 首通积分 */
+.level-row { display:flex; align-items:center; justify-content:center; gap:10px; margin:2px 0 10px; }
+.level-label { font-size:13px; color:var(--muted); white-space:nowrap; }
+.level-chips { display:flex; flex-wrap:wrap; justify-content:center; gap:6px; }
+.level-chip { min-width:30px; height:30px; padding:0 6px; border:1px solid #d8c49f; border-radius:999px; background:#fff; color:#6b5a44; font-size:13px; font-weight:700; cursor:pointer; }
+.level-chip:hover:not([disabled]) { border-color:#c0392b; color:#c0392b; }
+.level-chip.active { background:#c0392b; border-color:#c0392b; color:#fff; }
+.level-chip[disabled] { opacity:.42; cursor:not-allowed; }
+.reward-note { margin:-2px 0 10px; font-size:12.5px; color:#8a6f4e; }
+.reward-box { min-height:20px; margin:8px 0 10px; font-size:14px; font-weight:700; color:#a86a12; }
+.reward-box.guest { color:#7a6647; }
+.reward-box.error { color:#b3402e; }
+
+@media (max-width:480px) {
+  .panel { max-height:calc(100dvh - 28px); overflow-y:auto; padding:18px 14px; }
+  .mode-row { gap:7px; margin-bottom:10px; }
+  .mode-btn { padding:9px 6px; border-radius:10px; }
+  .mode-btn .mode-icon { font-size:21px; }
+  .mode-btn .mode-name { font-size:14px; }
+  .mode-btn .mode-desc { font-size:10.5px; }
+  .level-row { flex-direction:column; gap:6px; margin-bottom:8px; }
+  .level-chips { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); width:100%; max-width:280px; }
+  .level-chip { width:100%; height:30px; min-width:0; }
+  .level-chip[disabled] { display:none; }
+  .rules { font-size:12px; line-height:1.65; margin-bottom:10px; }
+  .rules li.extra { display:none; }
+  .btn.big { width:100%; padding:11px 18px; font-size:16px; }
+  .footer, .disclaimer { padding-bottom:calc(16px + env(safe-area-inset-bottom)); }
+}
