@@ -1,7 +1,7 @@
 /* 屋顶狙击 v0.4.1 —— 双模式（黄昏狙击 / 正午机枪）+ 蒙面匪 & 灰狼（关卡结构预留方案 C 任务制） */
 (function () {
   "use strict";
-  var APP_VERSION = "v0.4.7";
+  var APP_VERSION = "v0.4.8";
   var SAVE_KEY = "dbsniper-save-v2";
   var $ = function (id) { return document.getElementById(id); };
   var W = 900, H = 560; // 逻辑分辨率

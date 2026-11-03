@@ -8,7 +8,7 @@ body { font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; bac
 .brand { font-weight:700; font-size:17px; color:#3a2e22; }
 .topbar-tools { display:flex; align-items:center; gap:8px; }
 .version-badge { background:#efe3ca; color:#7a6647; font-size:12px; padding:2px 8px; border-radius:10px; }
-.refresh-btn { background:none; border:1px solid #cbb894; color:#7a6647; width:26px; height:26px; border-radius:50%; cursor:pointer; font-size:13px; }
+.refresh-btn { background:none; border:1px solid #cbb894; color:#7a6647; height:26px; padding:0 10px; border-radius:999px; cursor:pointer; font-size:13px; line-height:1; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
 .topbar-slot { margin-left:auto; }
 .page { max-width:940px; margin:0 auto; padding:12px 14px; }
 .hud { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
@@ -111,3 +111,8 @@ body { font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; bac
   .btn.big { width:100%; padding:11px 18px; font-size:16px; }
   .footer, .disclaimer { padding-bottom:calc(16px + env(safe-area-inset-bottom)); }
 }
+
+/* 更新按钮分层：桌面「更新到最新版」/手机「更新」（2026-11-03 家族统一补齐） */
+.rb-short { display: none; }
+.rb-full { display: inline; }
+@media (max-width: 480px) { .rb-full { display: none; } .rb-short { display: inline; } }
