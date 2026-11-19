@@ -1,7 +1,7 @@
 /* 屋顶狙击 v0.4.1 —— 双模式（黄昏狙击 / 正午机枪）+ 蒙面匪 & 灰狼（关卡结构预留方案 C 任务制） */
 (function () {
   "use strict";
-  var APP_VERSION = "v0.4.8";
+  var APP_VERSION = "v0.4.9";
   var SAVE_KEY = "dbsniper-save-v2";
   var $ = function (id) { return document.getElementById(id); };
   var W = 900, H = 560; // 逻辑分辨率
@@ -1031,8 +1031,8 @@
     canvas.width = W; canvas.height = H;
     bindInput();
     $("refresh-btn").addEventListener("click", function () {
-      if ("caches" in window) caches.keys().then(function (ks) { return Promise.all(ks.map(function (k) { return caches.delete(k); })); }).finally(function () { location.reload(); });
-      else location.reload();
+      if ("caches" in window) caches.keys().then(function (ks) { return Promise.all(ks.map(function (k) { return caches.delete(k); })); }).finally(function () { location.replace(location.pathname + (location.search ? location.search + "&" : "?") + "_t=" + Date.now()); });
+      else location.replace(location.pathname + (location.search ? location.search + "&" : "?") + "_t=" + Date.now());
     });
     // 模式按钮：悬停预览场景 + 切规则说明；点击 = 选定并开局
     function hookModeBtn(btnId, m) {
