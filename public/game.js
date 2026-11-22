@@ -1,8 +1,9 @@
 /* 屋顶狙击 v0.4.1 —— 双模式（黄昏狙击 / 正午机枪）+ 蒙面匪 & 灰狼（关卡结构预留方案 C 任务制） */
 (function () {
   "use strict";
-  var APP_VERSION = "v0.4.9";
+  var APP_VERSION = "v0.5.0";
   var SAVE_KEY = "dbsniper-save-v2";
+  var REWARD_OUTBOX_KEY = "dbsniper-reward-outbox-v1";
   var $ = function (id) { return document.getElementById(id); };
   var W = 900, H = 560; // 逻辑分辨率
 
@@ -936,25 +937,85 @@
       return;
     }
     setClearReward("", "⭐ 积分奖励入账中…");
-    fetch((window.DB_HOME || "https://daobox.app") + "/api/reward/game/clear", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({
-        app: "sniper", mode: mode, level: level, score: score,
-        requestId: "sniper-v1-" + mode + "-" + level
-      })
-    }).then(function (r) { return r.json().catch(function () { return {}; }); }).then(function (d) {
+    var payload = {
+      app: "sniper", mode: mode, level: level, score: score,
+      requestId: "sniper-v1-" + mode + "-" + level
+    };
+    if (navigator.onLine === false) {
+      queueLevelReward(payload);
+      setClearReward("", "📥 已记下，联网后自动补发 +" + n + " 积分");
+      return;
+    }
+    postLevelReward(payload).then(function (d) {
       if (d && d.ok) {
+        removeQueuedLevelReward(payload);
         setClearReward(d.gained > 0 ? "" : "guest",
           d.gained > 0 ? "⭐ 首通奖励 +" + d.gained + " 积分已到账" : "⭐ 本关首通积分已领过");
       } else {
-        setClearReward("error", "⭐ +" + n + " 积分奖励暂未到账，可稍后重试");
+        queueLevelReward(payload);
+        setClearReward("guest", "📥 已记下，联网后自动补发 +" + n + " 积分");
       }
     }).catch(function () {
-      setClearReward("error", "⭐ +" + n + " 积分奖励暂未到账，可稍后重试");
+      queueLevelReward(payload);
+      setClearReward("guest", "📥 已记下，联网后自动补发 +" + n + " 积分");
     });
   }
+
+  function levelRewardOutboxKey() {
+    var uid = window.DaoBox && DaoBox.user && DaoBox.user.id ? DaoBox.user.id : "guest";
+    return REWARD_OUTBOX_KEY + ":" + uid;
+  }
+  function readLevelRewardOutbox() {
+    try {
+      var rows = JSON.parse(localStorage.getItem(levelRewardOutboxKey()) || "[]");
+      return Array.isArray(rows) ? rows : [];
+    } catch (e) { return []; }
+  }
+  function writeLevelRewardOutbox(rows) {
+    try {
+      if (rows.length) localStorage.setItem(levelRewardOutboxKey(), JSON.stringify(rows.slice(-50)));
+      else localStorage.removeItem(levelRewardOutboxKey());
+    } catch (e) {}
+  }
+  function queueLevelReward(payload) {
+    var rows = readLevelRewardOutbox();
+    if (!rows.some(function (x) { return x.requestId === payload.requestId; })) {
+      rows.push(payload);
+      writeLevelRewardOutbox(rows);
+    }
+  }
+  function removeQueuedLevelReward(payload) {
+    writeLevelRewardOutbox(readLevelRewardOutbox().filter(function (x) { return x.requestId !== payload.requestId; }));
+  }
+  function postLevelReward(payload) {
+    return fetch((window.DB_HOME || "https://daobox.app") + "/api/reward/game/clear", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(payload)
+    }).then(function (r) { return r.json().catch(function () { return {}; }); });
+  }
+  var rewardFlushing = false;
+  function flushLevelRewardOutbox() {
+    if (!(window.DaoBox && DaoBox.user) || navigator.onLine === false || rewardFlushing) return;
+    var rows = readLevelRewardOutbox();
+    if (!rows.length) return;
+    rewardFlushing = true;
+    var remain = rows.slice();
+    var chain = Promise.resolve();
+    rows.forEach(function (payload) {
+      chain = chain.then(function () {
+        return postLevelReward(payload).then(function (d) {
+          if (d && d.ok) remain = remain.filter(function (x) { return x.requestId !== payload.requestId; });
+        }).catch(function () {});
+      });
+    });
+    chain.finally(function () {
+      rewardFlushing = false;
+      writeLevelRewardOutbox(remain);
+    });
+  }
+  window.addEventListener("online", flushLevelRewardOutbox);
   function levelClear() {
     state = "levelclear"; SFX.clear();
     var firstRun = level > save.maxLevel;
@@ -1079,6 +1140,7 @@
     showMenu();
     applyHudMode();
     updateHud();
+    setTimeout(flushLevelRewardOutbox, 1500);
     requestAnimationFrame(frame);
     setTimeout(function () { try { if (window.DaoBox && window.DaoBox.timeExceeded) applyTimeLock(); } catch (e) {} }, 1200);
   }
