@@ -1,7 +1,7 @@
 /* 屋顶狙击 v0.4.1 —— 双模式（黄昏狙击 / 正午机枪）+ 蒙面匪 & 灰狼（关卡结构预留方案 C 任务制） */
 (function () {
   "use strict";
-  var APP_VERSION = "v0.5.6";
+  var APP_VERSION = "v0.5.7";
   var SAVE_KEY = "dbsniper-save-v2";
   var REWARD_OUTBOX_KEY = "dbsniper-reward-outbox-v1";
   var $ = function (id) { return document.getElementById(id); };
@@ -52,6 +52,8 @@
   };
 
   /* ---------- 存档（v2：双模式分开记最高分） ---------- */
+  var sync = null;
+  var settingsUpdatedAt = 0;
   function loadSave() {
     try {
       var s = JSON.parse(localStorage.getItem(SAVE_KEY));
@@ -61,13 +63,101 @@
     } catch (e) {}
     return {};
   }
-  function persist() {
-    try {
-      localStorage.setItem(SAVE_KEY, JSON.stringify({
-        bestSniper: save.bestSniper, bestMg: save.bestMg,
-        maxLevel: save.maxLevel, muted: save.muted, mode: mode
-      }));
-    } catch (e) {}
+  function collectState() {
+    return {
+      records: {
+        bestSniper: Math.max(0, parseInt(save.bestSniper, 10) || 0),
+        bestMg: Math.max(0, parseInt(save.bestMg, 10) || 0),
+        maxLevel: Math.max(0, parseInt(save.maxLevel, 10) || 0)
+      },
+      settings: {
+        muted: !!save.muted,
+        mode: mode === "mg" ? "mg" : "sniper",
+        updatedAt: settingsUpdatedAt
+      }
+    };
+  }
+  function readLegacyState() {
+    var s = loadSave();
+    if (!s || (!s.bestSniper && !s.bestMg && !s.maxLevel && !s.muted && !s.mode)) return null;
+    return {
+      records: {
+        bestSniper: Number(s.bestSniper) || 0,
+        bestMg: Number(s.bestMg) || 0,
+        maxLevel: Number(s.maxLevel) || 0
+      },
+      settings: {
+        muted: !!s.muted,
+        mode: s.mode === "mg" ? "mg" : "sniper",
+        updatedAt: 0
+      }
+    };
+  }
+  function mergeState(local, remote) {
+    local = local || {};
+    remote = remote || {};
+    var lr = local.records || {};
+    var rr = remote.records || {};
+    var ls = local.settings || {};
+    var rs = remote.settings || {};
+    var settings = (Number(rs.updatedAt) || 0) > (Number(ls.updatedAt) || 0) ? rs : (ls || rs);
+    if (!settings || typeof settings !== "object") settings = {};
+    return {
+      records: {
+        bestSniper: Math.max(Number(lr.bestSniper) || 0, Number(rr.bestSniper) || 0),
+        bestMg: Math.max(Number(lr.bestMg) || 0, Number(rr.bestMg) || 0),
+        maxLevel: Math.max(Number(lr.maxLevel) || 0, Number(rr.maxLevel) || 0)
+      },
+      settings: {
+        muted: !!settings.muted,
+        mode: settings.mode === "mg" ? "mg" : "sniper",
+        updatedAt: Number(settings.updatedAt) || 0
+      }
+    };
+  }
+  function applyState(d) {
+    d = d || {};
+    var r = d.records || {};
+    var s = d.settings || {};
+    save = {
+      bestSniper: Math.max(0, Number(r.bestSniper) || 0),
+      bestMg: Math.max(0, Number(r.bestMg) || 0),
+      maxLevel: Math.max(0, Number(r.maxLevel) || 0),
+      muted: !!s.muted,
+      mode: s.mode === "mg" ? "mg" : "sniper"
+    };
+    mode = save.mode;
+    settingsUpdatedAt = Number(s.updatedAt) || 0;
+    if ($("btn-mute")) $("btn-mute").textContent = save.muted ? "🔇" : "🔊";
+    if (state === "menu") showMenu();
+    if (ctx) { applyHudMode(); updateHud(); }
+  }
+  function initSync() {
+    if (sync || !window.DaoBoxCloud) return;
+    sync = window.DaoBoxCloud.create({
+      app: "sniper",
+      schemaVersion: 1,
+      readLegacy: readLegacyState,
+      collect: collectState,
+      apply: applyState,
+      merge: mergeState,
+      isEmpty: function (d) {
+        var r = d && d.records || {};
+        return !(Number(r.bestSniper) || Number(r.bestMg) || Number(r.maxLevel));
+      }
+    });
+  }
+  function persist(touchSettings) {
+    if (touchSettings) settingsUpdatedAt = Date.now();
+    if (sync) sync.save(collectState());
+    else {
+      try {
+        localStorage.setItem(SAVE_KEY, JSON.stringify({
+          bestSniper: save.bestSniper, bestMg: save.bestMg,
+          maxLevel: save.maxLevel, muted: save.muted, mode: mode
+        }));
+      } catch (e) {}
+    }
   }
   var save = Object.assign({ bestSniper: 0, bestMg: 0, maxLevel: 0, muted: false, mode: "sniper" }, loadSave());
 
@@ -1021,7 +1111,7 @@
     var firstRun = level > save.maxLevel;
     if (score > bestOf()) { if (mode === "sniper") save.bestSniper = score; else save.bestMg = score; }
     if (level > save.maxLevel) save.maxLevel = level;
-    persist();
+    persist(false);
     var final = level >= MAX_LEVEL;
     $("clear-info").textContent = (final ? "🎉 全部通关！第 10 关完成！" : "第 " + level + " 关完成！") +
       " 得分 " + score + "（最高 " + bestOf() + "）";
@@ -1034,7 +1124,7 @@
   function gameOver() {
     state = "gameover"; SFX.over();
     if (score > bestOf()) { if (mode === "sniper") save.bestSniper = score; else save.bestMg = score; }
-    persist();
+    persist(false);
     $("over-info").textContent = "第 " + level + " 关 · 战绩 " + score + " · " +
       (mode === "sniper" ? "狙击" : "机枪") + "最高分 " + bestOf();
     $("over-modal").classList.remove("hidden");
@@ -1084,7 +1174,7 @@
   function setMode(m) {
     mode = m;
     previewMode = null;
-    persist();
+    persist(true);
   }
   function boot() {
     $("app-version").textContent = APP_VERSION;
@@ -1117,7 +1207,7 @@
     $("btn-resume").addEventListener("click", togglePause);
     $("btn-quit").addEventListener("click", function () { paused = false; firing = false; $("btn-pause").textContent = "⏸"; $("pause-modal").classList.add("hidden"); showMenu(); applyHudMode(); updateHud(); });
     $("btn-mute").addEventListener("click", function () {
-      save.muted = !save.muted; persist();
+      save.muted = !save.muted; persist(true);
       $("btn-mute").textContent = save.muted ? "🔇" : "🔊";
       if (!save.muted) ensureAudio();
       var hud = $("hud-level"), tip = save.muted ? "🔇 音效已关闭" : "🔊 音效已开启";
@@ -1137,12 +1227,16 @@
       btn.addEventListener("click", function () { ensureAudio(); SFX.demo(btn.getAttribute("data-sfx")); });
     });
     buildCity();
+    initSync();
+    var synced = sync ? sync.read() : readLegacyState();
+    if (synced) applyState(synced);
     showMenu();
     applyHudMode();
     updateHud();
     setTimeout(flushLevelRewardOutbox, 1500);
     requestAnimationFrame(frame);
     setTimeout(function () { try { if (window.DaoBox && window.DaoBox.timeExceeded) applyTimeLock(); } catch (e) {} }, 1200);
+    if (sync) sync.start();
   }
   // E2E 测试钩子（不影响正常玩法）
   window.__sniperTest = {
